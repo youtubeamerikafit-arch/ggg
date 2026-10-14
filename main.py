@@ -13,7 +13,6 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import config
 import database as db
-import case_game
 from handlers import bot_start, admin_ops
 from locales import STRINGS
 
@@ -81,21 +80,11 @@ async def get_user_api(request):
             "support_link": config.SUPPORT_LINK,
         }
         
-        stars_balance = 25.0
-        try:
-            stars_balance = float(user["stars_balance"]) if "stars_balance" in user.keys() and user["stars_balance"] is not None else 25.0
-        except Exception:
-            stars_balance = 25.0
-
-        inventory = await db.get_user_inventory(user_id)
-        
         return web.json_response({
             "user_id": user["user_id"],
             "username": user["username"],
             "first_name": user["first_name"],
             "balance": user["balance"],
-            "stars_balance": stars_balance,
-            "inventory_count": len(inventory),
             "completed_orders": completed_orders,
             "joined_at_formatted": joined_at_formatted,
             "settings": settings
@@ -678,15 +667,6 @@ async def main():
     app.router.add_post('/api/deposit/create_link', post_create_payment_link_api)
     app.router.add_post('/api/purchase', post_purchase_api)
     
-    # Stars Cases & Telegram Gifts Routes
-    app.router.add_get('/api/cases', case_game.get_cases_api)
-    app.router.add_post('/api/case/open', lambda req: case_game.open_case_api(req, bot=bot))
-    app.router.add_get('/api/inventory', case_game.get_inventory_api)
-    app.router.add_post('/api/inventory/sell', case_game.sell_inventory_api)
-    app.router.add_post('/api/inventory/claim', lambda req: case_game.claim_inventory_api(req, bot=bot))
-    app.router.add_get('/api/live_drops', case_game.get_live_drops_api)
-    app.router.add_post('/api/convert_uzs_to_stars', case_game.convert_uzs_to_stars_api)
-    
     # Billing Webhooks
     app.router.add_post('/api/payments/click/webhook', post_click_webhook)
     app.router.add_post('/api/payments/payme/webhook', post_payme_webhook)
@@ -738,27 +718,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Application stopped manually.")
-
-
-
-
-# ozm yozdm
-
-
-import aiohttp_cors
-from aiohttp import web
-
-app = web.Application()
-
-# CORS sozlamasi
-cors = aiohttp_cors.setup(app, defaults={
-    "*": aiohttp_cors.ResourceOptions(
-        allow_credentials=True,
-        expose_headers="*",
-        allow_headers="*",
-    )
-})
-
-# Yo'nalishlarni (routes) qo'shgandan so'ng ularga CORS qo'llash:
-for route in list(app.router.routes()):
-    cors.add(route)
