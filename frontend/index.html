@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YAKUDZA Stars & Premium</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Telegram WebApp JS SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <div class="user-avatar-section">
+                <img id="user-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                <span id="user-display-name">IBROHIM <span class="shark-emoji">🦈</span></span>
+            </div>
+            <div class="header-balance-badge">
+                <i data-lucide="wallet"></i>
+                <span id="header-balance-amount">0 UZS</span>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main-content">
+            
+            <!-- TAB 1: Bosh Sahifa (Home) -->
+            <section id="tab-home" class="tab-content active">
+                <!-- Balance Box -->
+                <div class="balance-card-container">
+                    <div class="balance-details">
+                        <span class="balance-title">Mening hisobim:</span>
+                        <h2 id="main-balance-amount" class="balance-amount">0 UZS</h2>
+                    </div>
+                    <button class="btn-add-funds" onclick="switchTab('balance')">
+                        <i data-lucide="plus"></i> To'ldirish
+                    </button>
+                </div>
+
+                <!-- Slider/Banner (Telegram Stars & Premium promos) -->
+                <div class="carousel-container">
+                    <div class="carousel-slide active" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);">
+                        <div class="slide-badge">Tavsiya etiladi</div>
+                        <div class="slide-content">
+                            <h3>Telegram Stars 🌟</h3>
+                            <p>Tezkor yetkazib berish va arzon narxlar!</p>
+                            <button class="btn-slide-action" onclick="scrollToCatalog('stars')">Sotib olish</button>
+                        </div>
+                        <div class="slide-icon">🌟</div>
+                    </div>
+                    <div class="carousel-slide" style="background: linear-gradient(135deg, #581c87 0%, #1e1b4b 100%);">
+                        <div class="slide-badge">Kafolatlangan</div>
+                        <div class="slide-content">
+                            <h3>Telegram Premium 💎</h3>
+                            <p>Obunani arzonroq narxda hadya qiling!</p>
+                            <button class="btn-slide-action" onclick="scrollToCatalog('premium')">Sotib olish</button>
+                        </div>
+                        <div class="slide-icon">💎</div>
+                    </div>
+                </div>
+
+                <!-- Catalog Grid -->
+                <div class="catalog-section">
+                    <h3 class="section-title">🌟 TELEGRAM STARS</h3>
+                    <div id="stars-catalog" class="catalog-grid">
+                        <!-- Loaded dynamically -->
+                        <div class="loading-placeholder">Yuklanmoqda...</div>
+                    </div>
+
+                    <h3 class="section-title" style="margin-top: 24px;">💎 TELEGRAM PREMIUM</h3>
+                    <div id="premium-catalog" class="catalog-grid">
+                        <!-- Loaded dynamically -->
+                        <div class="loading-placeholder">Yuklanmoqda...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: Balans (Add Funds) -->
+            <section id="tab-balance" class="tab-content">
+                <div class="page-title-section">
+                    <h2>Balansni to'ldirish</h2>
+                    <p>Kartamga o'tkazma qiling, chek rasmini yuklang — admin tasdiqlagach pul balansingizga tushadi</p>
+                </div>
+
+                <div class="balance-card-container static-balance">
+                    <div class="balance-details">
+                        <span class="balance-title">Joriy balans:</span>
+                        <h2 id="deposit-balance-amount" class="balance-amount">0 UZS</h2>
+                    </div>
+                </div>
+
+                <!-- Payment Method: Karta-to-Karta -->
+                <div class="payment-methods-grid" style="grid-template-columns: 1fr; gap: 10px;">
+                    <div class="payment-method-card active" style="flex-direction: row; justify-content: space-between; padding: 12px 16px; cursor: default;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i data-lucide="credit-card" style="width: 22px; height: 22px; color: #a855f7;"></i>
+                            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                <span class="pm-name" style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Karta-to-Karta (Humo/Uzcard)</span>
+                                <span style="font-size: 10px; color: var(--text-secondary);">Kartamga o'tkazma qiling va chek yuklang</span>
+                            </div>
+                        </div>
+                        <i class="pm-check" data-lucide="check-circle-2" style="position: static; opacity: 1;"></i>
+                    </div>
+                </div>
+
+                <!-- Payment Form -->
+                <div class="payment-form-container">
+                    <div class="input-group">
+                        <label for="deposit-amount">To'lov summasi (UZS)</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="coins"></i>
+                            <input type="number" id="deposit-amount" placeholder="Minimal 5,000 UZS" min="5000">
+                        </div>
+                    </div>
+
+                    <div id="card-details-box" class="card-details-box">
+                        <div class="card-header">
+                            <span>To'lov uchun karta ma'lumotlari:</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-field">
+                                <span class="field-label">Karta raqami:</span>
+                                <div class="card-number-wrapper">
+                                    <span id="card-number" class="field-value">8600 1204 5678 9012</span>
+                                    <button class="btn-copy" onclick="copyCardNumber()">
+                                        <i data-lucide="copy" size="14"></i> Nusxa
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-field">
+                                <span class="field-label">Karta egasi:</span>
+                                <span id="card-owner" class="field-value">IBROHIM KH.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="receipt-upload-box">
+                        <p class="upload-instructions">
+                            To'lovni amalga oshirgach, chek rasmini yuklang. To'lov tasdiqlanganidan so'ng, pul balansingizga tushadi.
+                        </p>
+                        
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="receipt-file" accept="image/*" onchange="handleFileSelect(event)">
+                            <div id="upload-trigger" class="upload-area">
+                                <i data-lucide="image" class="upload-icon"></i>
+                                <span id="upload-status-text">Chek rasmini tanlang</span>
+                                <span class="upload-subtext">JPEG, PNG formatlari (Max 10MB)</span>
+                            </div>
+                            <img id="receipt-preview" src="#" alt="Chek nusxasi" style="display: none;">
+                        </div>
+                    </div>
+
+                    <button id="btn-submit-deposit" class="btn-primary" onclick="submitDeposit()">
+                        <i data-lucide="send"></i> To'lovni tekshirishga yuborish
+                    </button>
+                </div>
+            </section>
+
+            <!-- TAB 3: Tarix (History) -->
+            <section id="tab-history" class="tab-content">
+                <div class="history-tabs">
+                    <button class="history-tab-btn active" onclick="switchHistorySubTab('orders')">
+                        Buyurtmalar tarixi
+                    </button>
+                    <button class="history-tab-btn" onclick="switchHistorySubTab('deposits')">
+                        To'lovlar tarixi
+                    </button>
+                </div>
+
+                <!-- Search/Filter Bar -->
+                <div class="filter-bar">
+                    <div class="search-wrapper">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="history-search" placeholder="Qidirish..." oninput="filterHistory()">
+                    </div>
+                </div>
+
+                <!-- Sub-tab: Orders History -->
+                <div id="history-orders-container" class="history-list-container active">
+                    <!-- Loaded dynamically -->
+                    <div class="loading-placeholder">Yuklanmoqda...</div>
+                </div>
+
+                <!-- Sub-tab: Deposits History -->
+                <div id="history-deposits-container" class="history-list-container">
+                    <!-- Loaded dynamically -->
+                    <div class="loading-placeholder">Yuklanmoqda...</div>
+                </div>
+            </section>
+
+            <!-- TAB 4: Profil (Profile) -->
+            <section id="tab-profile" class="tab-content">
+                <div class="profile-card">
+                    <div class="profile-avatar-wrapper">
+                        <img id="profile-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                    </div>
+                    <h3 id="profile-name">IBROHIM</h3>
+                    <p id="profile-username">@IBROHIMBOI_UC</p>
+                    <span id="profile-id" class="profile-badge">ID: 5721221489</span>
+                </div>
+
+                <div class="profile-stats-grid">
+                    <div class="stat-box">
+                        <i data-lucide="package-check" class="stat-icon"></i>
+                        <span class="stat-value" id="stats-orders">0</span>
+                        <span class="stat-label">Bajarilgan buyurtmalar</span>
+                    </div>
+                    <div class="stat-box">
+                        <i data-lucide="calendar" class="stat-icon"></i>
+                        <span class="stat-value" id="stats-reg-date">26.07.2026</span>
+                        <span class="stat-label">Ro'yxatdan o'tgan sana</span>
+                    </div>
+                </div>
+
+                <div class="profile-menu">
+                    <a id="link-news" href="https://t.me/" target="_blank" class="profile-menu-item">
+                        <div class="pmi-left">
+                            <i data-lucide="megaphone"></i>
+                            <span>Yangiliklar kanali</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="pmi-arrow"></i>
+                    </a>
+                    <a id="link-support" href="https://t.me/" target="_blank" class="profile-menu-item">
+                        <div class="pmi-left">
+                            <i data-lucide="headset"></i>
+                            <span>Qo'llab-quvvatlash xizmati</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="pmi-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="app-footer-brand">
+                    <span>@yakfast_bot</span>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Buy Modal (Modal Dialog) -->
+        <div id="buy-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Buyurtma berish</h3>
+                    <button class="btn-close-modal" onclick="closeBuyModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-product-summary">
+                        <div class="mps-icon" id="modal-prod-icon">🌟</div>
+                        <div class="mps-details">
+                            <h4 id="modal-prod-name">100 Stars</h4>
+                            <span id="modal-prod-price">25,000 UZS</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="order-target">Telegram username yoki telefon raqam</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="at-sign"></i>
+                            <input type="text" id="order-target" placeholder="@username yoki +998901234567">
+                        </div>
+                        <p class="input-help-text">Obuna yoki yulduzlar hadya qilinadigan profil ma'lumotini kiriting.</p>
+                    </div>
+
+                    <div class="wallet-payment-check">
+                        <span class="wpc-label">Balansdan to'lash:</span>
+                        <div class="wpc-row">
+                            <span class="wpc-balance" id="modal-user-balance">Mening balansim: 0 UZS</span>
+                            <span class="wpc-status" id="modal-balance-status">Etarli emas</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-confirm-purchase" class="btn-primary btn-full-width" onclick="confirmPurchase()">
+                        Xaridni tasdiqlash
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast-notification">
+            <span id="toast-message">Xabar</span>
+        </div>
+
+        <!-- Sticky Bottom Navigation Bar -->
+        <footer class="app-footer-navigation">
+            <nav class="nav-tabs">
+                <button class="nav-tab-btn active" onclick="switchTab('home')">
+                    <i data-lucide="home"></i>
+                    <span>Bosh sahifa</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('balance')">
+                    <i data-lucide="wallet"></i>
+                    <span>Balans</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('history')">
+                    <i data-lucide="history"></i>
+                    <span>Tarix</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('profile')">
+                    <i data-lucide="user"></i>
+                    <span>Profil</span>
+                </button>
+            </nav>
+        </footer>
+
+    </div>
+
+    <!-- Frontend Script -->
+    <script src="app.js"></script>
+</body>
+</html>
