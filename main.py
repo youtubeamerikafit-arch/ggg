@@ -718,3 +718,29 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Application stopped manually.")
+
+
+
+
+
+
+# ozm yozdm
+
+
+import aiohttp_cors
+from aiohttp import web
+
+app = web.Application()
+
+# CORS sozlamasi
+cors = aiohttp_cors.setup(app, defaults={
+    "*": aiohttp_cors.ResourceOptions(
+        allow_credentials=True,
+        expose_headers="*",
+        allow_headers="*",
+    )
+})
+
+# Yo'nalishlarni (routes) qo'shgandan so'ng ularga CORS qo'llash:
+for route in list(app.router.routes()):
+    cors.add(route)
