@@ -2,8 +2,10 @@ import asyncio
 import os
 import base64
 import hashlib
+import socket
 import time
 from datetime import datetime
+from pathlib import Path
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import FSInputFile
@@ -11,21 +13,38 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 import config
 import database as db
+import case_game
 from handlers import bot_start, admin_ops
 from locales import STRINGS
 
 # Ensure receipts folder exists
-RECEIPTS_DIR = "receipts"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+RECEIPTS_DIR = os.path.join(BASE_DIR, "receipts")
 os.makedirs(RECEIPTS_DIR, exist_ok=True)
 
 # Global bot reference for API handlers
 bot: Bot = None
 
+
+def find_available_port(start_port: int, host: str = "0.0.0.0", max_attempts: int = 20) -> int:
+    """Return the first free TCP port starting from start_port."""
+    for port in range(start_port, start_port + max_attempts):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                sock.bind((host, port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f"No free port found in range {start_port}-{start_port + max_attempts - 1}")
+
+
 # AIOHTTP API Request Handlers
 
 async def handle_index(request):
     """Serve the WebApp index file."""
-    return web.FileResponse('frontend/index.html')
+    return web.FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
 
 async def get_user_api(request):
     """Fetch user profile information."""
@@ -62,11 +81,21 @@ async def get_user_api(request):
             "support_link": config.SUPPORT_LINK,
         }
         
+        stars_balance = 25.0
+        try:
+            stars_balance = float(user["stars_balance"]) if "stars_balance" in user.keys() and user["stars_balance"] is not None else 25.0
+        except Exception:
+            stars_balance = 25.0
+
+        inventory = await db.get_user_inventory(user_id)
+        
         return web.json_response({
             "user_id": user["user_id"],
             "username": user["username"],
             "first_name": user["first_name"],
             "balance": user["balance"],
+            "stars_balance": stars_balance,
+            "inventory_count": len(inventory),
             "completed_orders": completed_orders,
             "joined_at_formatted": joined_at_formatted,
             "settings": settings
@@ -167,6 +196,91 @@ async def post_deposit_api(request):
     except Exception as e:
         print("API Error in post_deposit_api:", e)
         return web.json_response({"detail": str(e)}, status=500)
+
+async def _verify_admin_key(request):
+    key = request.query.get('key') or request.headers.get('X-Admin-Key')
+    return key == config.ADMIN_PANEL_KEY
+
+
+async def get_admin_deposits_api(request):
+    """Return pending deposits for the browser admin panel."""
+    try:
+        if not await _verify_admin_key(request):
+            return web.json_response({"detail": "Unauthorized"}, status=401)
+
+        deposits = await db.get_pending_deposits()
+        result = []
+        for item in deposits:
+            result.append({
+                "id": item["id"],
+                "user_id": item["user_id"],
+                "user_name": item["first_name"] or item["username"] or "Noma'lum",
+                "amount": item["amount"],
+                "payment_method": item["payment_method"],
+                "created_at": str(item["created_at"]),
+            })
+        return web.json_response(result)
+    except Exception as e:
+        print("Admin deposits API error:", e)
+        return web.json_response({"detail": str(e)}, status=500)
+
+
+async def get_admin_receipt_api(request):
+    """Serve a deposit receipt image to the browser admin panel."""
+    try:
+        if not await _verify_admin_key(request):
+            return web.json_response({"detail": "Unauthorized"}, status=401)
+
+        deposit_id = int(request.match_info['deposit_id'])
+        deposit = await db.get_deposit(deposit_id)
+        if not deposit or not deposit["receipt_photo_id"]:
+            return web.json_response({"detail": "Receipt not found"}, status=404)
+
+        receipt_path = deposit["receipt_photo_id"]
+        if not os.path.exists(receipt_path):
+            return web.json_response({"detail": "Receipt file missing"}, status=404)
+
+        return web.FileResponse(receipt_path)
+    except Exception as e:
+        print("Admin receipt API error:", e)
+        return web.json_response({"detail": str(e)}, status=500)
+
+
+async def post_admin_deposit_action_api(request):
+    """Approve or reject a deposit from the browser admin panel."""
+    try:
+        if not await _verify_admin_key(request):
+            return web.json_response({"detail": "Unauthorized"}, status=401)
+
+        deposit_id = int(request.match_info['deposit_id'])
+        action = request.match_info['action']
+        deposit = await db.get_deposit(deposit_id)
+        if not deposit:
+            return web.json_response({"detail": "Deposit not found"}, status=404)
+        if deposit["status"] != "pending":
+            return web.json_response({"detail": "Deposit already processed"}, status=400)
+
+        if action == 'approve':
+            await db.update_deposit_status(deposit_id, 'approved')
+            await db.add_user_balance(deposit["user_id"], deposit["amount"])
+            await bot.send_message(
+                chat_id=deposit["user_id"],
+                text=STRINGS["uz"]["deposit_approved"].format(amount=deposit["amount"]),
+            )
+            return web.json_response({"message": "To'lov tasdiqlandi"})
+        elif action == 'reject':
+            await db.update_deposit_status(deposit_id, 'rejected')
+            await bot.send_message(
+                chat_id=deposit["user_id"],
+                text=STRINGS["uz"]["deposit_rejected"],
+            )
+            return web.json_response({"message": "To'lov rad etildi"})
+        else:
+            return web.json_response({"detail": "Invalid action"}, status=400)
+    except Exception as e:
+        print("Admin deposit action error:", e)
+        return web.json_response({"detail": str(e)}, status=500)
+
 
 async def post_purchase_api(request):
     """Handle product purchases using the wallet balance."""
@@ -536,6 +650,9 @@ async def main():
     await db.db_init()
     print("Database initialized successfully.")
     
+    if not config.BOT_TOKEN:
+        raise RuntimeError("BOT_TOKEN is not configured. Please set it in the .env file before starting the bot.")
+
     # Initialize Bot & Dispatcher
     bot = Bot(token=config.BOT_TOKEN)
     dp = Dispatcher()
@@ -550,19 +667,32 @@ async def main():
     # Register static and API routes
     app.router.add_get('/', handle_index)
     app.router.add_get('/index.html', handle_index)
+    app.router.add_get('/admin', lambda req: web.FileResponse(os.path.join(FRONTEND_DIR, 'admin.html')))
     app.router.add_get('/api/user', get_user_api)
+    app.router.add_get('/api/admin/deposits', get_admin_deposits_api)
+    app.router.add_get('/api/admin/deposits/{deposit_id}/receipt', get_admin_receipt_api)
+    app.router.add_post('/api/admin/deposits/{deposit_id}/{action}', post_admin_deposit_action_api)
     app.router.add_get('/api/packages', get_packages_api)
     app.router.add_get('/api/history', get_history_api)
     app.router.add_post('/api/deposit', post_deposit_api)
     app.router.add_post('/api/deposit/create_link', post_create_payment_link_api)
     app.router.add_post('/api/purchase', post_purchase_api)
     
+    # Stars Cases & Telegram Gifts Routes
+    app.router.add_get('/api/cases', case_game.get_cases_api)
+    app.router.add_post('/api/case/open', lambda req: case_game.open_case_api(req, bot=bot))
+    app.router.add_get('/api/inventory', case_game.get_inventory_api)
+    app.router.add_post('/api/inventory/sell', case_game.sell_inventory_api)
+    app.router.add_post('/api/inventory/claim', lambda req: case_game.claim_inventory_api(req, bot=bot))
+    app.router.add_get('/api/live_drops', case_game.get_live_drops_api)
+    app.router.add_post('/api/convert_uzs_to_stars', case_game.convert_uzs_to_stars_api)
+    
     # Billing Webhooks
     app.router.add_post('/api/payments/click/webhook', post_click_webhook)
     app.router.add_post('/api/payments/payme/webhook', post_payme_webhook)
     
     # Serving other frontend assets (style.css, app.js, images, etc.)
-    app.router.add_static('/', 'frontend')
+    app.router.add_static('/', FRONTEND_DIR)
     
     # Start Telegram Bot Polling in the background
     polling_task = asyncio.create_task(dp.start_polling(bot))
@@ -571,9 +701,26 @@ async def main():
     # Start web app runner on configured port
     runner = web.AppRunner(app)
     await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', config.PORT)
-    await site.start()
-    print(f"Web application server started at http://localhost:{config.PORT}")
+
+    resolved_port = config.PORT
+    try:
+        site = web.TCPSite(runner, config.HOST, resolved_port)
+        await site.start()
+    except OSError as exc:
+        if exc.errno != 10048:
+            raise
+        resolved_port = find_available_port(config.PORT)
+        print(f"Port {config.PORT} is busy, using fallback port {resolved_port} instead.")
+        if not os.getenv("WEBAPP_URL", "").strip():
+            config.WEBAPP_URL = f"http://localhost:{resolved_port}"
+        site = web.TCPSite(runner, config.HOST, resolved_port)
+        await site.start()
+
+    if not os.getenv("WEBAPP_URL", "").strip() and config.WEBAPP_URL.endswith(f":{config.PORT}"):
+        config.WEBAPP_URL = f"http://localhost:{resolved_port}"
+
+    print(f"Web application server started at http://localhost:{resolved_port}")
+    print(f"Payment links and webapp URL: {config.WEBAPP_URL}")
     
     # Keep application running
     try:
@@ -591,26 +738,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Application stopped manually.")
-
-
-
-# ozm qoshdm
-
-
-import aiohttp_cors
-from aiohttp import web
-
-app = web.Application()
-
-# CORS sozlamasi
-cors = aiohttp_cors.setup(app, defaults={
-    "*": aiohttp_cors.ResourceOptions(
-        allow_credentials=True,
-        expose_headers="*",
-        allow_headers="*",
-    )
-})
-
-# Yo'nalishlarni (routes) qo'shgandan so'ng ularga CORS qo'llash:
-for route in list(app.router.routes()):
-    cors.add(route)
