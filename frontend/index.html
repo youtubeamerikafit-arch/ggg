@@ -1,629 +1,323 @@
-// Initialize Telegram WebApp SDK
-const tg = window.Telegram ? window.Telegram.WebApp : null;
-
-// Application State
-let state = {
-    user: {
-        id: 5721221489, // Mock default matching screenshot
-        first_name: "IBROHIM",
-        username: "IBROHIMBOI_UC",
-        photo_url: "https://img.icons8.com/color/96/avatar.png",
-        balance: 0,
-        completed_orders: 0,
-        reg_date: "26.07.2026"
-    },
-    packages: [],
-    history: {
-        orders: [],
-        deposits: []
-    },
-    selectedPaymentMethod: 'manual',
-    selectedPackage: null,
-    receiptBase64: null,
-    receiptFileName: null,
-    settings: {
-        cardNumber: "8600 1204 5678 9012",
-        cardOwner: "IBROHIM KH.",
-        newsLink: "https://t.me/YAKUDZA_UC_NEWS",
-        supportLink: "https://t.me/yakfast_support"
-    }
-};
-
-// DOM Elements cache
-const els = {};
-
-// Wait for DOM to load
-document.addEventListener("DOMContentLoaded", () => {
-    // Initialize icons
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
-    
-    // Cache common DOM elements
-    els.userAvatar = document.getElementById("user-avatar");
-    els.profileAvatar = document.getElementById("profile-avatar");
-    els.userDisplayName = document.getElementById("user-display-name");
-    els.profileName = document.getElementById("profile-name");
-    els.profileUsername = document.getElementById("profile-username");
-    els.profileId = document.getElementById("profile-id");
-    
-    els.headerBalance = document.getElementById("header-balance-amount");
-    els.mainBalance = document.getElementById("main-balance-amount");
-    els.depositBalance = document.getElementById("deposit-balance-amount");
-    
-    els.starsCatalog = document.getElementById("stars-catalog");
-    els.premiumCatalog = document.getElementById("premium-catalog");
-    
-    els.statsOrders = document.getElementById("stats-orders");
-    els.statsRegDate = document.getElementById("stats-reg-date");
-    els.linkNews = document.getElementById("link-news");
-    els.linkSupport = document.getElementById("link-support");
-    
-    els.cardNumber = document.getElementById("card-number");
-    els.cardOwner = document.getElementById("card-owner");
-    
-    els.buyModal = document.getElementById("buy-modal");
-    els.toast = document.getElementById("toast");
-    
-    // Parse Telegram WebApp Data
-    initTelegramData();
-    
-    // Fetch Initial Data from API
-    fetchUserData();
-    fetchCatalog();
-    
-    // Initial UI render
-    renderProfile();
-    startCarousel();
-});
-
-// 1. Telegram WebApp Integration
-function initTelegramData() {
-    if (!tg) return;
-    
-    tg.ready();
-    tg.expand();
-    
-    // Set theme colors if supported
-    if (tg.themeParams) {
-        document.documentElement.style.setProperty('--bg-primary', tg.themeParams.bg_color || '#0b0f19');
-        document.documentElement.style.setProperty('--bg-secondary', tg.themeParams.secondary_bg_color || '#141c2f');
-        document.documentElement.style.setProperty('--text-primary', tg.themeParams.text_color || '#ffffff');
-        document.documentElement.style.setProperty('--text-secondary', tg.themeParams.hint_color || '#94a3b8');
-    }
-    
-    // Extract user info
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-        const tgUser = tg.initDataUnsafe.user;
-        state.user.id = tgUser.id;
-        state.user.first_name = tgUser.first_name || "Foydalanuvchi";
-        state.user.username = tgUser.username ? `@${tgUser.username}` : "";
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YAKUDZA Stars & Premium</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Telegram WebApp JS SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- App Container -->
+    <div id="app-container">
         
-        // Formulate a profile initials avatar as backup or use photo_url if provided
-        state.user.photo_url = tgUser.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(state.user.first_name)}&background=1e293b&color=ffffff&size=128`;
-    }
-}
-
-// 2. Navigation
-function switchTab(tabId) {
-    // Hide all tabs
-    document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
-    document.querySelectorAll(".nav-tab-btn").forEach(el => el.classList.remove("active"));
-    
-    // Show selected tab
-    const tabEl = document.getElementById(`tab-${tabId}`);
-    if (tabEl) tabEl.classList.add("active");
-    
-    // Find active nav button
-    const btnIdx = ['home', 'balance', 'history', 'profile'].indexOf(tabId);
-    if (btnIdx !== -1) {
-        document.querySelectorAll(".nav-tab-btn")[btnIdx].classList.add("active");
-    }
-    
-    // If switching to history tab, refresh history
-    if (tabId === 'history') {
-        fetchHistory();
-    }
-    // If switching to balance or profile, refresh user details
-    if (tabId === 'balance' || tabId === 'profile') {
-        fetchUserData();
-    }
-}
-
-function switchHistorySubTab(subTab) {
-    document.querySelectorAll(".history-tab-btn").forEach(btn => btn.classList.remove("active"));
-    document.querySelectorAll(".history-list-container").forEach(c => c.classList.remove("active"));
-    
-    if (subTab === 'orders') {
-        document.querySelectorAll(".history-tab-btn")[0].classList.add("active");
-        document.getElementById("history-orders-container").classList.add("active");
-    } else {
-        document.querySelectorAll(".history-tab-btn")[1].classList.add("active");
-        document.getElementById("history-deposits-container").classList.add("active");
-    }
-}
-
-// Scroll from banner to categories
-function scrollToCatalog(category) {
-    // Switch to home tab first if not already there
-    switchTab('home');
-    setTimeout(() => {
-        const titleText = category === 'stars' ? '🌟 TELEGRAM STARS' : '💎 TELEGRAM PREMIUM';
-        const sectionTitles = Array.from(document.querySelectorAll('.section-title'));
-        const targetTitle = sectionTitles.find(el => el.textContent.includes(titleText));
-        if (targetTitle) {
-            targetTitle.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, 100);
-}
-
-// Banner Carousel animation
-let currentSlide = 0;
-function startCarousel() {
-    const slides = document.querySelectorAll(".carousel-slide");
-    if (slides.length <= 1) return;
-    
-    setInterval(() => {
-        slides[currentSlide].classList.remove("active");
-        currentSlide = (currentSlide + 1) % slides.length;
-        slides[currentSlide].classList.add("active");
-    }, 5000);
-}
-
-// 3. UI Rendering Helpers
-function renderProfile() {
-    // Top header profile info
-    if (els.userAvatar) els.userAvatar.src = state.user.photo_url;
-    if (els.profileAvatar) els.profileAvatar.src = state.user.photo_url;
-    if (els.userDisplayName) els.userDisplayName.innerHTML = `${state.user.first_name} <span class="shark-emoji">🦈</span>`;
-    
-    // Profile Tab details
-    if (els.profileName) els.profileName.textContent = state.user.first_name;
-    if (els.profileUsername) els.profileUsername.textContent = state.user.username ? state.user.username : `ID: ${state.user.id}`;
-    if (els.profileId) els.profileId.textContent = `ID: ${state.user.id}`;
-    
-    // Balances
-    updateBalancesUI();
-    
-    // Stats & Links
-    if (els.statsOrders) els.statsOrders.textContent = state.user.completed_orders;
-    if (els.statsRegDate) els.statsRegDate.textContent = state.user.reg_date;
-    
-    if (els.linkNews) els.linkNews.href = state.settings.newsLink;
-    if (els.linkSupport) els.linkSupport.href = state.settings.supportLink;
-    
-    if (els.cardNumber) els.cardNumber.textContent = state.settings.cardNumber;
-    if (els.cardOwner) els.cardOwner.textContent = state.settings.cardOwner;
-}
-
-function updateBalancesUI() {
-    const formattedBalance = `${state.user.balance.toLocaleString('uz-UZ')} UZS`;
-    if (els.headerBalance) els.headerBalance.textContent = formattedBalance;
-    if (els.mainBalance) els.mainBalance.textContent = formattedBalance;
-    if (els.depositBalance) els.depositBalance.textContent = formattedBalance;
-}
-
-function renderCatalog() {
-    if (!els.starsCatalog || !els.premiumCatalog) return;
-    
-    const stars = state.packages.filter(p => p.category === 'stars');
-    const premium = state.packages.filter(p => p.category === 'premium');
-    
-    // Render Stars
-    if (stars.length === 0) {
-        els.starsCatalog.innerHTML = '<div class="loading-placeholder">Stars paketlar topilmadi.</div>';
-    } else {
-        els.starsCatalog.innerHTML = stars.map(p => `
-            <div class="catalog-card">
-                <div class="catalog-card-icon">🌟</div>
-                <div class="catalog-card-name">${p.name}</div>
-                <div class="catalog-card-price">${p.price.toLocaleString('uz-UZ')} UZS</div>
-                <button class="btn-buy" onclick="openBuyModal(${p.id})">Sotib olish</button>
+        <!-- Header -->
+        <header class="app-header">
+            <div class="user-avatar-section">
+                <img id="user-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                <span id="user-display-name">IBROHIM <span class="shark-emoji">🦈</span></span>
             </div>
-        `).join('');
-    }
-    
-    // Render Premium
-    if (premium.length === 0) {
-        els.premiumCatalog.innerHTML = '<div class="loading-placeholder">Premium paketlar topilmadi.</div>';
-    } else {
-        els.premiumCatalog.innerHTML = premium.map(p => `
-            <div class="catalog-card">
-                <div class="catalog-card-icon">💎</div>
-                <div class="catalog-card-name">${p.name}</div>
-                <div class="catalog-card-price">${p.price.toLocaleString('uz-UZ')} UZS</div>
-                <button class="btn-buy" onclick="openBuyModal(${p.id})">Sotib olish</button>
+            <div class="header-balance-badge">
+                <i data-lucide="wallet"></i>
+                <span id="header-balance-amount">0 UZS</span>
             </div>
-        `).join('');
-    }
-}
+        </header>
 
-// 4. API Requests
-async function fetchUserData() {
-    try {
-        const response = await fetch(`/api/user?user_id=${state.user.id}`);
-        if (response.ok) {
-            const data = await response.json();
-            state.user.balance = data.balance;
-            state.user.completed_orders = data.completed_orders;
-            state.user.reg_date = data.joined_at_formatted || state.user.reg_date;
-            if (data.settings) {
-                state.settings.cardNumber = data.settings.card_number || state.settings.cardNumber;
-                state.settings.cardOwner = data.settings.card_owner || state.settings.cardOwner;
-                state.settings.newsLink = data.settings.news_link || state.settings.newsLink;
-                state.settings.supportLink = data.settings.support_link || state.settings.supportLink;
-            }
-            renderProfile();
-        }
-    } catch (err) {
-        console.error("Error fetching user data:", err);
-    }
-}
-
-async function fetchCatalog() {
-    try {
-        const response = await fetch('/api/packages');
-        if (response.ok) {
-            state.packages = await response.json();
-            renderCatalog();
-        }
-    } catch (err) {
-        console.error("Error fetching catalog:", err);
-        // Fallback to offline defaults if API fails
-        state.packages = [
-            { id: 1, category: 'stars', name: '100 Stars 🌟', price: 28000, value: 100 },
-            { id: 2, category: 'stars', name: '150 Stars 🌟', price: 41000, value: 150 },
-            { id: 3, category: 'stars', name: '250 Stars 🌟', price: 66000, value: 250 },
-            { id: 4, category: 'stars', name: '500 Stars 🌟', price: 130000, value: 500 },
-            { id: 5, category: 'stars', name: '1000 Stars 🌟', price: 257000, value: 1000 },
-            { id: 6, category: 'premium', name: 'Premium 3 Oylik 💎', price: 90000, value: 3 },
-            { id: 7, category: 'premium', name: 'Premium 6 Oylik 💎', price: 160000, value: 6 },
-            { id: 8, category: 'premium', name: 'Premium 12 Oylik 💎', price: 290000, value: 12 },
-        ];
-        renderCatalog();
-    }
-}
-
-async function fetchHistory() {
-    try {
-        const response = await fetch(`/api/history?user_id=${state.user.id}`);
-        if (response.ok) {
-            const data = await response.json();
-            state.history.orders = data.orders || [];
-            state.history.deposits = data.deposits || [];
-            renderHistoryLists();
-        }
-    } catch (err) {
-        console.error("Error fetching history:", err);
-        renderHistoryLists(); // Renders empty state
-    }
-}
-
-function renderHistoryLists() {
-    const ordersContainer = document.getElementById("history-orders-container");
-    const depositsContainer = document.getElementById("history-deposits-container");
-    
-    // Render Orders
-    if (state.history.orders.length === 0) {
-        ordersContainer.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon-box"><i data-lucide="package"></i></div>
-                <h3>Buyurtmalar hali yo'q</h3>
-                <p>Buyurtmalar tarixingiz birinchi xaridingizdan keyin shu yerda ko'rinadi.</p>
-            </div>
-        `;
-    } else {
-        ordersContainer.innerHTML = state.history.orders.map(o => {
-            let statusText = "Kutilmoqda";
-            let statusClass = "status-pending";
-            if (o.status === 'completed') {
-                statusText = "Bajarildi";
-                statusClass = "status-completed";
-            } else if (o.status === 'cancelled') {
-                statusText = "Rad etildi";
-                statusClass = "status-cancelled";
-            }
+        <!-- Main Content Area -->
+        <main class="app-main-content">
             
-            return `
-                <div class="history-card" data-search="${o.package_name.toLowerCase()} ${o.target_username.toLowerCase()}">
-                    <div class="hc-left">
-                        <span class="hc-title">${o.package_name}</span>
-                        <span class="hc-target">Kimga: ${o.target_username}</span>
-                        <span class="hc-date">${formatDate(o.created_at)}</span>
+            <!-- TAB 1: Bosh Sahifa (Home) -->
+            <section id="tab-home" class="tab-content active">
+                <!-- Balance Box -->
+                <div class="balance-card-container">
+                    <div class="balance-details">
+                        <span class="balance-title">Mening hisobim:</span>
+                        <h2 id="main-balance-amount" class="balance-amount">0 UZS</h2>
                     </div>
-                    <div class="hc-right">
-                        <span class="hc-price">${o.price.toLocaleString('uz-UZ')} UZS</span>
-                        <span class="hc-status ${statusClass}">${statusText}</span>
+                    <button class="btn-add-funds" onclick="switchTab('balance')">
+                        <i data-lucide="plus"></i> To'ldirish
+                    </button>
+                </div>
+
+                <!-- Slider/Banner (Telegram Stars & Premium promos) -->
+                <div class="carousel-container">
+                    <div class="carousel-slide active" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);">
+                        <div class="slide-badge">Tavsiya etiladi</div>
+                        <div class="slide-content">
+                            <h3>Telegram Stars 🌟</h3>
+                            <p>Tezkor yetkazib berish va arzon narxlar!</p>
+                            <button class="btn-slide-action" onclick="scrollToCatalog('stars')">Sotib olish</button>
+                        </div>
+                        <div class="slide-icon">🌟</div>
+                    </div>
+                    <div class="carousel-slide" style="background: linear-gradient(135deg, #581c87 0%, #1e1b4b 100%);">
+                        <div class="slide-badge">Kafolatlangan</div>
+                        <div class="slide-content">
+                            <h3>Telegram Premium 💎</h3>
+                            <p>Obunani arzonroq narxda hadya qiling!</p>
+                            <button class="btn-slide-action" onclick="scrollToCatalog('premium')">Sotib olish</button>
+                        </div>
+                        <div class="slide-icon">💎</div>
                     </div>
                 </div>
-            `;
-        }).join('');
-    }
-    
-    // Render Deposits
-    if (state.history.deposits.length === 0) {
-        depositsContainer.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon-box"><i data-lucide="receipt"></i></div>
-                <h3>Tranzaksiyalar mavjud emas</h3>
-                <p>Tranzaksiya tarixingiz shu yerda ko'rinadi.</p>
-            </div>
-        `;
-    } else {
-        depositsContainer.innerHTML = state.history.deposits.map(d => {
-            let statusText = "Kutilmoqda";
-            let statusClass = "status-pending";
-            if (d.status === 'approved') {
-                statusText = "Tasdiqlandi";
-                statusClass = "status-success";
-            } else if (d.status === 'rejected') {
-                statusText = "Rad etildi";
-                statusClass = "status-rejected";
-            }
-            
-            return `
-                <div class="history-card" data-search="${d.payment_method.toLowerCase()}">
-                    <div class="hc-left">
-                        <span class="hc-title">Balansni to'ldirish</span>
-                        <span class="hc-target">Turi: ${d.payment_method.toUpperCase()}</span>
-                        <span class="hc-date">${formatDate(d.created_at)}</span>
+
+                <!-- Catalog Grid -->
+                <div class="catalog-section">
+                    <h3 class="section-title">🌟 TELEGRAM STARS</h3>
+                    <div id="stars-catalog" class="catalog-grid">
+                        <!-- Loaded dynamically -->
+                        <div class="loading-placeholder">Yuklanmoqda...</div>
                     </div>
-                    <div class="hc-right">
-                        <span class="hc-price">+${d.amount.toLocaleString('uz-UZ')} UZS</span>
-                        <span class="hc-status ${statusClass}">${statusText}</span>
+
+                    <h3 class="section-title" style="margin-top: 24px;">💎 TELEGRAM PREMIUM</h3>
+                    <div id="premium-catalog" class="catalog-grid">
+                        <!-- Loaded dynamically -->
+                        <div class="loading-placeholder">Yuklanmoqda...</div>
                     </div>
                 </div>
-            `;
-        }).join('');
-    }
-    
-    if (window.lucide) {
-        window.lucide.createIcons();
-    }
-}
+            </section>
 
-function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    
-    if (file.size > 10 * 1024 * 1024) {
-        showToast("Rasm hajmi juda katta! Maksimal 10MB bo'lishi kerak.");
-        event.target.value = '';
-        return;
-    }
-    
-    state.receiptFileName = file.name;
-    document.getElementById("upload-status-text").textContent = `Tanlandi: ${file.name}`;
-    
-    // Read file as Base64 for upload
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        state.receiptBase64 = e.target.result;
-        
-        // Show preview image
-        const preview = document.getElementById("receipt-preview");
-        preview.src = e.target.result;
-        preview.style.display = "block";
-        document.getElementById("upload-trigger").style.display = "none";
-    };
-    reader.readAsDataURL(file);
-}
+            <!-- TAB 2: Balans (Add Funds) -->
+            <section id="tab-balance" class="tab-content">
+                <div class="page-title-section">
+                    <h2>Balansni to'ldirish</h2>
+                    <p>Kartamga o'tkazma qiling, chek rasmini yuklang — admin tasdiqlagach pul balansingizga tushadi</p>
+                </div>
 
-function copyCardNumber() {
-    const cardNum = state.settings.cardNumber.replace(/\s+/g, '');
-    navigator.clipboard.writeText(cardNum).then(() => {
-        showToast("Karta raqami nusxalandi!");
-    }).catch(err => {
-        // Fallback for some webview containers
-        const textArea = document.createElement("textarea");
-        textArea.value = cardNum;
-        document.body.appendChild(textArea);
-        textArea.select();
-        try {
-            document.execCommand('copy');
-            showToast("Karta raqami nusxalandi!");
-        } catch (err2) {
-            console.error("Could not copy card number: ", err2);
-        }
-        document.body.removeChild(textArea);
-    });
-}
+                <div class="balance-card-container static-balance">
+                    <div class="balance-details">
+                        <span class="balance-title">Joriy balans:</span>
+                        <h2 id="deposit-balance-amount" class="balance-amount">0 UZS</h2>
+                    </div>
+                </div>
 
-async function submitDeposit() {
-    const amountInput = document.getElementById("deposit-amount");
-    const amount = parseFloat(amountInput.value);
-    
-    if (isNaN(amount) || amount < 5000) {
-        showToast("Iltimos, kamida 5,000 UZS kiriting!");
-        return;
-    }
-    
-    if (!state.receiptBase64) {
-        showToast("Iltimos, to'lov chekini yuklang!");
-        return;
-    }
-    
-    const submitBtn = document.getElementById("btn-submit-deposit");
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Yuborilmoqda...";
-    
-    try {
-        const response = await fetch('/api/deposit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: state.user.id,
-                amount: amount,
-                payment_method: 'manual',
-                receipt_base64: state.receiptBase64,
-                file_name: state.receiptFileName
-            })
-        });
-        
-        if (response.ok) {
-            showToast("To'lov tekshirishga yuborildi! Admin tasdiqlagach balansga tushadi ✅");
-            
-            // Reset deposit form
-            amountInput.value = '';
-            state.receiptBase64 = null;
-            state.receiptFileName = null;
-            document.getElementById("receipt-preview").style.display = "none";
-            document.getElementById("upload-trigger").style.display = "flex";
-            document.getElementById("upload-status-text").textContent = "Chek rasmini tanlang";
-            document.getElementById("receipt-file").value = '';
-            
-            // Switch to History tab
-            switchTab('history');
-            switchHistorySubTab('deposits');
-        } else {
-            const errData = await response.json();
-            showToast(errData.detail || "Xatolik yuz berdi!");
-        }
-    } catch (err) {
-        console.error("Deposit submission error:", err);
-        showToast("Server bilan bog'lanishda xatolik!");
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `<i data-lucide="send"></i> To'lovni tekshirishga yuborish`;
-        if (window.lucide) window.lucide.createIcons();
-    }
-}
+                <!-- Payment Method: Karta-to-Karta -->
+                <div class="payment-methods-grid" style="grid-template-columns: 1fr; gap: 10px;">
+                    <div class="payment-method-card active" style="flex-direction: row; justify-content: space-between; padding: 12px 16px; cursor: default;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i data-lucide="credit-card" style="width: 22px; height: 22px; color: #a855f7;"></i>
+                            <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                                <span class="pm-name" style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Karta-to-Karta (Humo/Uzcard)</span>
+                                <span style="font-size: 10px; color: var(--text-secondary);">Kartamga o'tkazma qiling va chek yuklang</span>
+                            </div>
+                        </div>
+                        <i class="pm-check" data-lucide="check-circle-2" style="position: static; opacity: 1;"></i>
+                    </div>
+                </div>
 
-// 6. Xarid qilish (Purchase) logic
-function openBuyModal(packageId) {
-    const pkg = state.packages.find(p => p.id === packageId);
-    if (!pkg) return;
-    
-    state.selectedPackage = pkg;
-    
-    // Update Modal Details
-    document.getElementById("modal-prod-icon").textContent = pkg.category === 'stars' ? '🌟' : '💎';
-    document.getElementById("modal-prod-name").textContent = pkg.name;
-    document.getElementById("modal-prod-price").textContent = `${pkg.price.toLocaleString('uz-UZ')} UZS`;
-    
-    // Balance check
-    const balanceText = document.getElementById("modal-user-balance");
-    const balanceStatus = document.getElementById("modal-balance-status");
-    const confirmBtn = document.getElementById("btn-confirm-purchase");
-    
-    balanceText.textContent = `Mening balansim: ${state.user.balance.toLocaleString('uz-UZ')} UZS`;
-    
-    if (state.user.balance >= pkg.price) {
-        balanceStatus.textContent = "Etarli";
-        balanceStatus.className = "wpc-status status-success";
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = "Xaridni tasdiqlash";
-    } else {
-        balanceStatus.textContent = "Etarli emas";
-        balanceStatus.className = "wpc-status status-rejected";
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = "Mablag' yetarli emas";
-    }
-    
-    // Open Modal
-    els.buyModal.classList.add("active");
-}
+                <!-- Payment Form -->
+                <div class="payment-form-container">
+                    <div class="input-group">
+                        <label for="deposit-amount">To'lov summasi (UZS)</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="coins"></i>
+                            <input type="number" id="deposit-amount" placeholder="Minimal 5,000 UZS" min="5000">
+                        </div>
+                    </div>
 
-function closeBuyModal() {
-    els.buyModal.classList.remove("active");
-    document.getElementById("order-target").value = '';
-    state.selectedPackage = null;
-}
+                    <div id="card-details-box" class="card-details-box">
+                        <div class="card-header">
+                            <span>To'lov uchun karta ma'lumotlari:</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-field">
+                                <span class="field-label">Karta raqami:</span>
+                                <div class="card-number-wrapper">
+                                    <span id="card-number" class="field-value">8600 1204 5678 9012</span>
+                                    <button class="btn-copy" onclick="copyCardNumber()">
+                                        <i data-lucide="copy" size="14"></i> Nusxa
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-field">
+                                <span class="field-label">Karta egasi:</span>
+                                <span id="card-owner" class="field-value">IBROHIM KH.</span>
+                            </div>
+                        </div>
+                    </div>
 
-async function confirmPurchase() {
-    const targetInput = document.getElementById("order-target");
-    const target = targetInput.value.trim();
-    const pkg = state.selectedPackage;
-    
-    if (!pkg) return;
-    
-    if (!target) {
-        showToast("Iltimos, Telegram username yoki telefon raqam kiriting!");
-        return;
-    }
-    
-    if (state.user.balance < pkg.price) {
-        showToast("Balansda mablag' yetarli emas!");
-        return;
-    }
-    
-    const confirmBtn = document.getElementById("btn-confirm-purchase");
-    confirmBtn.disabled = true;
-    confirmBtn.textContent = "Yuborilmoqda...";
-    
-    try {
-        const response = await fetch('/api/purchase', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: state.user.id,
-                username: state.user.username,
-                first_name: state.user.first_name,
-                package_id: pkg.id,
-                target_username: target
-            })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            // Deduct locally first
-            state.user.balance = data.new_balance;
-            updateBalancesUI();
-            
-            showToast("Buyurtma qabul qilindi va tekshirilmoqda! 🚀");
-            closeBuyModal();
-            
-            // Switch to History tab
-            switchTab('history');
-            switchHistorySubTab('orders');
-        } else {
-            const errData = await response.json();
-            showToast(errData.detail || "Xatolik yuz berdi!");
-        }
-    } catch (err) {
-        console.error("Purchase error:", err);
-        showToast("Server bilan bog'lanishda xatolik!");
-    } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = "Xaridni tasdiqlash";
-    }
-}
+                    <div class="receipt-upload-box">
+                        <p class="upload-instructions">
+                            To'lovni amalga oshirgach, chek rasmini yuklang. To'lov tasdiqlanganidan so'ng, pul balansingizga tushadi.
+                        </p>
+                        
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="receipt-file" accept="image/*" onchange="handleFileSelect(event)">
+                            <div id="upload-trigger" class="upload-area">
+                                <i data-lucide="image" class="upload-icon"></i>
+                                <span id="upload-status-text">Chek rasmini tanlang</span>
+                                <span class="upload-subtext">JPEG, PNG formatlari (Max 10MB)</span>
+                            </div>
+                            <img id="receipt-preview" src="#" alt="Chek nusxasi" style="display: none;">
+                        </div>
+                    </div>
 
-// 7. Search/Filtering history
-function filterHistory() {
-    const searchVal = document.getElementById("history-search").value.toLowerCase();
-    const cards = document.querySelectorAll(".history-card");
-    
-    cards.forEach(card => {
-        const searchData = card.getAttribute("data-search");
-        if (searchData && searchData.includes(searchVal)) {
-            card.style.display = "flex";
-        } else {
-            card.style.display = "none";
-        }
-    });
-}
+                    <button id="btn-submit-deposit" class="btn-primary" onclick="submitDeposit()">
+                        <i data-lucide="send"></i> To'lovni tekshirishga yuborish
+                    </button>
+                </div>
+            </section>
 
-// 8. Helper Functions
-function showToast(message) {
-    if (!els.toast) return;
-    
-    document.getElementById("toast-message").textContent = message;
-    els.toast.classList.add("active");
-    
-    setTimeout(() => {
-        els.toast.classList.remove("active");
-    }, 3000);
-}
+            <!-- TAB 3: Tarix (History) -->
+            <section id="tab-history" class="tab-content">
+                <div class="history-tabs">
+                    <button class="history-tab-btn active" onclick="switchHistorySubTab('orders')">
+                        Buyurtmalar tarixi
+                    </button>
+                    <button class="history-tab-btn" onclick="switchHistorySubTab('deposits')">
+                        To'lovlar tarixi
+                    </button>
+                </div>
 
-function formatDate(dateStr) {
-    if (!dateStr) return '';
-    try {
-        // Handle SQLite timestamp string (YYYY-MM-DD HH:MM:SS) or ISO
-        const d = new Date(dateStr.replace(' ', 'T'));
-        if (isNaN(d.getTime())) return dateStr;
-        return `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth()+1).toString().padStart(2, '0')}.${d.getFullYear()} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-    } catch (e) {
-        return dateStr;
-    }
-}
+                <!-- Search/Filter Bar -->
+                <div class="filter-bar">
+                    <div class="search-wrapper">
+                        <i data-lucide="search"></i>
+                        <input type="text" id="history-search" placeholder="Qidirish..." oninput="filterHistory()">
+                    </div>
+                </div>
+
+                <!-- Sub-tab: Orders History -->
+                <div id="history-orders-container" class="history-list-container active">
+                    <!-- Loaded dynamically -->
+                    <div class="loading-placeholder">Yuklanmoqda...</div>
+                </div>
+
+                <!-- Sub-tab: Deposits History -->
+                <div id="history-deposits-container" class="history-list-container">
+                    <!-- Loaded dynamically -->
+                    <div class="loading-placeholder">Yuklanmoqda...</div>
+                </div>
+            </section>
+
+            <!-- TAB 4: Profil (Profile) -->
+            <section id="tab-profile" class="tab-content">
+                <div class="profile-card">
+                    <div class="profile-avatar-wrapper">
+                        <img id="profile-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                    </div>
+                    <h3 id="profile-name">IBROHIM</h3>
+                    <p id="profile-username">@IBROHIMBOI_UC</p>
+                    <span id="profile-id" class="profile-badge">ID: 5721221489</span>
+                </div>
+
+                <div class="profile-stats-grid">
+                    <div class="stat-box">
+                        <i data-lucide="package-check" class="stat-icon"></i>
+                        <span class="stat-value" id="stats-orders">0</span>
+                        <span class="stat-label">Bajarilgan buyurtmalar</span>
+                    </div>
+                    <div class="stat-box">
+                        <i data-lucide="calendar" class="stat-icon"></i>
+                        <span class="stat-value" id="stats-reg-date">26.07.2026</span>
+                        <span class="stat-label">Ro'yxatdan o'tgan sana</span>
+                    </div>
+                </div>
+
+                <div class="profile-menu">
+                    <a id="link-news" href="https://t.me/" target="_blank" class="profile-menu-item">
+                        <div class="pmi-left">
+                            <i data-lucide="megaphone"></i>
+                            <span>Yangiliklar kanali</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="pmi-arrow"></i>
+                    </a>
+                    <a id="link-support" href="https://t.me/" target="_blank" class="profile-menu-item">
+                        <div class="pmi-left">
+                            <i data-lucide="headset"></i>
+                            <span>Qo'llab-quvvatlash xizmati</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="pmi-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="app-footer-brand">
+                    <span>@yakfast_bot</span>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Buy Modal (Modal Dialog) -->
+        <div id="buy-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Buyurtma berish</h3>
+                    <button class="btn-close-modal" onclick="closeBuyModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-product-summary">
+                        <div class="mps-icon" id="modal-prod-icon">🌟</div>
+                        <div class="mps-details">
+                            <h4 id="modal-prod-name">100 Stars</h4>
+                            <span id="modal-prod-price">25,000 UZS</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="order-target">Telegram username yoki telefon raqam</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="at-sign"></i>
+                            <input type="text" id="order-target" placeholder="@username yoki +998901234567">
+                        </div>
+                        <p class="input-help-text">Obuna yoki yulduzlar hadya qilinadigan profil ma'lumotini kiriting.</p>
+                    </div>
+
+                    <div class="wallet-payment-check">
+                        <span class="wpc-label">Balansdan to'lash:</span>
+                        <div class="wpc-row">
+                            <span class="wpc-balance" id="modal-user-balance">Mening balansim: 0 UZS</span>
+                            <span class="wpc-status" id="modal-balance-status">Etarli emas</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-confirm-purchase" class="btn-primary btn-full-width" onclick="confirmPurchase()">
+                        Xaridni tasdiqlash
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast-notification">
+            <span id="toast-message">Xabar</span>
+        </div>
+
+        <!-- Sticky Bottom Navigation Bar -->
+        <footer class="app-footer-navigation">
+            <nav class="nav-tabs">
+                <button class="nav-tab-btn active" onclick="switchTab('home')">
+                    <i data-lucide="home"></i>
+                    <span>Bosh sahifa</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('balance')">
+                    <i data-lucide="wallet"></i>
+                    <span>Balans</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('history')">
+                    <i data-lucide="history"></i>
+                    <span>Tarix</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('profile')">
+                    <i data-lucide="user"></i>
+                    <span>Profil</span>
+                </button>
+            </nav>
+        </footer>
+
+    </div>
+
+    <!-- Frontend Script -->
+    <script src="app.js"></script>
+</body>
+</html>
