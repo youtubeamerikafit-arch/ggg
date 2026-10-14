@@ -17,6 +17,14 @@ PREMIUM_PACKAGES = [
     ('premium', 'Premium 12 Oylik 💎', 290000.0, 12, 'premium_12.png'),
 ]
 
+ISLAND_PACKAGES = [
+    ('island', '🦩 Flamingo Keysi', 15000.0, 1, 'flamingo.png'),
+    ('island', '🌋 Vulqon Keysi', 25000.0, 2, 'volcano.png'),
+    ('island', '🌴 La’natlangan Orol Keysi', 40000.0, 3, 'island.png'),
+    ('island', '🗿 Qadimiy Ma’bada Keysi', 60000.0, 4, 'temple.png'),
+    ('island', '🏴‍☠️ Qora Qaroqchi Sandig\'i', 90000.0, 5, 'pirate.png'),
+]
+
 async def _sync_packages(db, packages, category):
     """Keep catalog in sync with configured package list."""
     active_values = [pkg[3] for pkg in packages]
@@ -120,6 +128,7 @@ async def db_init():
         
         await _sync_packages(db, STAR_PACKAGES, 'stars')
         await _sync_packages(db, PREMIUM_PACKAGES, 'premium')
+        await _sync_packages(db, ISLAND_PACKAGES, 'island')
         await db.commit()
 
 async def create_user_if_not_exists(user_id: int, username: str, first_name: str):
