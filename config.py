@@ -1,6 +1,10 @@
 import os
 from dotenv import load_dotenv
 
+HOST = "0.0.0.0"
+
+
+
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
