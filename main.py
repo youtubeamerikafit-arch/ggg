@@ -186,6 +186,54 @@ async def post_deposit_api(request):
         print("API Error in post_deposit_api:", e)
         return web.json_response({"detail": str(e)}, status=500)
 
+async def post_roulette_spin_api(request):
+    """Handle Cursed Island roulette spin in UZS."""
+    try:
+        data = await request.json()
+        user_id = int(data.get("user_id", 0))
+        cost = float(data.get("cost", 10000))
+        user = await db.get_user(user_id)
+        if not user:
+            return web.json_response({"detail": "Foydalanuvchi topilmadi"}, status=404)
+        if user["balance"] < cost:
+            return web.json_response({"detail": f"Mablag' yetarli emas! Hisobingiz: {user['balance']:,.0f} UZS, narxi: {cost:,.0f} UZS."}, status=400)
+        
+        await db.deduct_user_balance(user_id, cost)
+        import random
+        weapons = [
+            {"name": "Pushti Flamingo Kamoni", "icon": "🏹", "value": 15000, "rarity": "rare", "color": "#f43f5e"},
+            {"name": "Olovli Vulqon AK-47", "icon": "🔫", "value": 35000, "rarity": "epic", "color": "#f97316"},
+            {"name": "La'natlangan Machete", "icon": "🗡️", "value": 20000, "rarity": "rare", "color": "#a855f7"},
+            {"name": "Zaharli Nayza", "icon": "🔱", "value": 12000, "rarity": "common", "color": "#10b981"},
+            {"name": "Magma Pistoleti", "icon": "💥", "value": 25000, "rarity": "rare", "color": "#ef4444"},
+            {"name": "Qora Olmos Xanjari", "icon": "💎", "value": 80000, "rarity": "legendary", "color": "#38bdf8"},
+            {"name": "Tropik Pichoq", "icon": "🔪", "value": 8000, "rarity": "common", "color": "#94a3b8"},
+            {"name": "Oltin Qilich", "icon": "⚔️", "value": 50000, "rarity": "legendary", "color": "#eab308"}
+        ]
+        won = random.choice(weapons)
+        updated_user = await db.get_user(user_id)
+        return web.json_response({
+            "success": True,
+            "won_weapon": won,
+            "new_balance": updated_user["balance"]
+        })
+    except Exception as e:
+        return web.json_response({"detail": str(e)}, status=500)
+
+async def post_sell_weapon_api(request):
+    """Sell a won weapon back to UZS balance."""
+    try:
+        data = await request.json()
+        user_id = int(data.get("user_id", 0))
+        value = float(data.get("value", 0))
+        if user_id and value > 0:
+            await db.add_user_balance(user_id, value)
+            updated_user = await db.get_user(user_id)
+            return web.json_response({"success": True, "new_balance": updated_user["balance"]})
+        return web.json_response({"detail": "Xato parametrlar"}, status=400)
+    except Exception as e:
+        return web.json_response({"detail": str(e)}, status=500)
+
 async def _verify_admin_key(request):
     key = request.query.get('key') or request.headers.get('X-Admin-Key')
     return key == config.ADMIN_PANEL_KEY
@@ -666,6 +714,8 @@ async def main():
     app.router.add_post('/api/deposit', post_deposit_api)
     app.router.add_post('/api/deposit/create_link', post_create_payment_link_api)
     app.router.add_post('/api/purchase', post_purchase_api)
+    app.router.add_post('/api/roulette/spin', post_roulette_spin_api)
+    app.router.add_post('/api/roulette/sell', post_sell_weapon_api)
     
     # Billing Webhooks
     app.router.add_post('/api/payments/click/webhook', post_click_webhook)
@@ -718,29 +768,3 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         print("Application stopped manually.")
-
-
-
-
-
-
-# ozm yozdm
-
-
-import aiohttp_cors
-from aiohttp import web
-
-app = web.Application()
-
-# CORS sozlamasi
-cors = aiohttp_cors.setup(app, defaults={
-    "*": aiohttp_cors.ResourceOptions(
-        allow_credentials=True,
-        expose_headers="*",
-        allow_headers="*",
-    )
-})
-
-# Yo'nalishlarni (routes) qo'shgandan so'ng ularga CORS qo'llash:
-for route in list(app.router.routes()):
-    cors.add(route)
