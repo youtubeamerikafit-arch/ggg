@@ -55,16 +55,9 @@ async def db_init():
                 username TEXT,
                 first_name TEXT,
                 balance REAL DEFAULT 0.0,
-                stars_balance REAL DEFAULT 25.0,
                 joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-
-        # Migration: ensure stars_balance column exists if table was created previously
-        try:
-            await db.execute("ALTER TABLE users ADD COLUMN stars_balance REAL DEFAULT 25.0")
-        except Exception:
-            pass
         
         # Create packages table
         await db.execute("""
@@ -93,55 +86,6 @@ async def db_init():
                 FOREIGN KEY(user_id) REFERENCES users(user_id)
             )
         """)
-
-        # Create inventory table for won Telegram gifts
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS inventory (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
-                item_name TEXT,
-                item_icon TEXT,
-                stars_value INTEGER,
-                rarity TEXT,
-                status TEXT DEFAULT 'in_inventory', -- 'in_inventory', 'sold', 'claimed'
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(user_id) REFERENCES users(user_id)
-            )
-        """)
-
-        # Create live_drops table for real-time live ticker
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS live_drops (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_name TEXT,
-                item_name TEXT,
-                item_icon TEXT,
-                stars_value INTEGER,
-                rarity TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-
-        # Pre-seed live drops if empty
-        cursor = await db.execute("SELECT COUNT(*) FROM live_drops")
-        count = (await cursor.fetchone())[0]
-        if count == 0:
-            seed_drops = [
-                ("IBROHIM", "Teddy Bear", "🧸", 15, "rare"),
-                ("Sardor", "Ginger Cookie", "🍪", 362, "epic"),
-                ("Javohir", "Teddy Bear", "🧸", 15, "rare"),
-                ("Anvar", "Heart", "💖", 15, "common"),
-                ("Diyor", "Rose", "🌹", 25, "rare"),
-                ("Shaxzod", "Champagne", "🍾", 100, "epic"),
-                ("Alisher", "Diamond", "💎", 500, "mythic"),
-                ("Madina", "Heart", "💖", 15, "common"),
-                ("Azizbek", "Cake", "🎂", 50, "epic"),
-                ("Doniyor", "Crown", "👑", 250, "legendary"),
-            ]
-            await db.executemany("""
-                INSERT INTO live_drops (user_name, item_name, item_icon, stars_value, rarity)
-                VALUES (?, ?, ?, ?, ?)
-            """, seed_drops)
         
         # Create payme_transactions table for JSON-RPC API
         await db.execute("""
@@ -181,8 +125,8 @@ async def db_init():
 async def create_user_if_not_exists(user_id: int, username: str, first_name: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("""
-            INSERT OR IGNORE INTO users (user_id, username, first_name, stars_balance)
-            VALUES (?, ?, ?, 25.0)
+            INSERT OR IGNORE INTO users (user_id, username, first_name)
+            VALUES (?, ?, ?)
         """, (user_id, username or "", first_name or ""))
         # If user exists, update their username & first_name in case it changed
         await db.execute("""
@@ -427,96 +371,3 @@ async def cancel_payme_transaction(payme_id: str, cancel_time: int, reason: int,
             WHERE id = ?
         """, (state, cancel_time, reason, payme_id))
         await db.commit()
-
-# --- Stars & Inventory Management ---
-
-async def add_user_stars(user_id: int, stars: float):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            UPDATE users SET stars_balance = COALESCE(stars_balance, 0) + ? WHERE user_id = ?
-        """, (stars, user_id))
-        await db.commit()
-
-async def deduct_user_stars(user_id: int, stars: float):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            UPDATE users SET stars_balance = MAX(0, COALESCE(stars_balance, 0) - ?) WHERE user_id = ?
-        """, (stars, user_id))
-        await db.commit()
-
-async def get_user_inventory(user_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("""
-            SELECT * FROM inventory
-            WHERE user_id = ? AND status = 'in_inventory'
-            ORDER BY created_at DESC
-        """, (user_id,)) as cursor:
-            return await cursor.fetchall()
-
-async def add_inventory_item(user_id: int, item_name: str, item_icon: str, stars_value: int, rarity: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute("""
-            INSERT INTO inventory (user_id, item_name, item_icon, stars_value, rarity, status)
-            VALUES (?, ?, ?, ?, ?, 'in_inventory')
-        """, (user_id, item_name, item_icon, stars_value, rarity))
-        item_id = cursor.lastrowid
-        await db.commit()
-        return item_id
-
-async def sell_inventory_item(user_id: int, item_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("""
-            SELECT * FROM inventory WHERE id = ? AND user_id = ? AND status = 'in_inventory'
-        """, (item_id, user_id)) as cursor:
-            item = await cursor.fetchone()
-            
-        if not item:
-            return None
-            
-        stars_value = item["stars_value"]
-        await db.execute("""
-            UPDATE inventory SET status = 'sold' WHERE id = ?
-        """, (item_id,))
-        await db.execute("""
-            UPDATE users SET stars_balance = COALESCE(stars_balance, 0) + ? WHERE user_id = ?
-        """, (stars_value, user_id))
-        await db.commit()
-        return stars_value
-
-async def claim_inventory_item(user_id: int, item_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("""
-            SELECT * FROM inventory WHERE id = ? AND user_id = ? AND status = 'in_inventory'
-        """, (item_id, user_id)) as cursor:
-            item = await cursor.fetchone()
-            
-        if not item:
-            return False
-            
-        await db.execute("""
-            UPDATE inventory SET status = 'claimed' WHERE id = ?
-        """, (item_id,))
-        await db.commit()
-        return True
-
-async def record_live_drop(user_name: str, item_name: str, item_icon: str, stars_value: int, rarity: str):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            INSERT INTO live_drops (user_name, item_name, item_icon, stars_value, rarity)
-            VALUES (?, ?, ?, ?, ?)
-        """, (user_name, item_name, item_icon, stars_value, rarity))
-        await db.commit()
-
-async def get_live_drops(limit: int = 25):
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("""
-            SELECT * FROM live_drops
-            ORDER BY created_at DESC, id DESC
-            LIMIT ?
-        """, (limit,)) as cursor:
-            return await cursor.fetchall()
-
