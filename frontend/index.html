@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>YAKUDZA Stars & Premium</title>
-    <!-- Google Fonts: Outfit & Inter -->
+    <title>MINE — AntiGravity (v1.2) | La’natlangan Orol</title>
+    <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons via CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Telegram WebApp JS SDK -->
@@ -18,15 +18,31 @@
     <!-- App Container -->
     <div id="app-container">
         
-        <!-- Header -->
+        <!-- Header (AntiGravity v1.2, MINE Logo, Kirish kabineti & Profil) -->
         <header class="app-header">
-            <div class="user-avatar-section">
-                <img id="user-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
-                <span id="user-display-name">IBROHIM <span class="shark-emoji">🦈</span></span>
+            <div class="header-brand-block">
+                <span class="antigravity-badge">AntiGravity (v1.2)</span>
+                <div class="mine-logo-container">
+                    <span class="mine-logo">MINE</span>
+                    <span class="island-chip">🌴 OROL</span>
+                </div>
             </div>
-            <div class="header-balance-badge">
-                <i data-lucide="wallet"></i>
-                <span id="header-balance-amount">0 UZS</span>
+
+            <div class="header-right-user">
+                <!-- User Profile & ID -->
+                <div class="user-cabinet-summary" onclick="switchTab('profile')">
+                    <img id="user-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                    <div class="ucs-details">
+                        <span id="user-display-name">IBROHIM</span>
+                        <span class="user-mine-id" id="header-user-id">ID: mine_user_99</span>
+                    </div>
+                </div>
+
+                <!-- Kirish kabineti tugmasi -->
+                <button class="btn-login-cabinet" onclick="openLoginModal()" title="Kirish kabineti">
+                    <i data-lucide="log-in"></i>
+                    <span>Kirish</span>
+                </button>
             </div>
         </header>
 
@@ -35,10 +51,11 @@
             
             <!-- TAB 1: Bosh Sahifa (Home) -->
             <section id="tab-home" class="tab-content active">
-                <!-- Balance Box -->
+                
+                <!-- Hisobingiz (Balance Box) -->
                 <div class="balance-card-container">
                     <div class="balance-details">
-                        <span class="balance-title">Mening hisobim:</span>
+                        <span class="balance-title">Hisobingiz:</span>
                         <h2 id="main-balance-amount" class="balance-amount">0 UZS</h2>
                     </div>
                     <button class="btn-add-funds" onclick="switchTab('balance')">
@@ -46,54 +63,168 @@
                     </button>
                 </div>
 
-                <!-- Slider/Banner (Telegram Stars & Premium promos) -->
-                <div class="carousel-container">
-                    <div class="carousel-slide active" style="background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);">
-                        <div class="slide-badge">Tavsiya etiladi</div>
-                        <div class="slide-content">
-                            <h3>Telegram Stars 🌟</h3>
-                            <p>Tezkor yetkazib berish va arzon narxlar!</p>
-                            <button class="btn-slide-action" onclick="scrollToCatalog('stars')">Sotib olish</button>
-                        </div>
-                        <div class="slide-icon">🌟</div>
+                <!-- La'natlangan Orol Hero Banner (Flamingo, Vulqon) -->
+                <div class="cursed-island-banner">
+                    <div class="cib-content">
+                        <div class="cib-tag">🔥 XAVFLI HUDUD</div>
+                        <h2>LA’NATLANGAN OROL SIRLARI</h2>
+                        <p>Flamingo va vulqon keyslarini oching, afsonaviy orol qurollariga ega bo'ling!</p>
+                        <button class="btn-cib-action" onclick="scrollToCursedCases()">
+                            <i data-lucide="compass"></i> Keyslarni Ochish
+                        </button>
                     </div>
-                    <div class="carousel-slide" style="background: linear-gradient(135deg, #581c87 0%, #1e1b4b 100%);">
-                        <div class="slide-badge">Kafolatlangan</div>
-                        <div class="slide-content">
-                            <h3>Telegram Premium 💎</h3>
-                            <p>Obunani arzonroq narxda hadya qiling!</p>
-                            <button class="btn-slide-action" onclick="scrollToCatalog('premium')">Sotib olish</button>
-                        </div>
-                        <div class="slide-icon">💎</div>
+                    <div class="cib-visual">
+                        <span class="cib-floating item-volcano" title="Vulqon">🌋</span>
+                        <span class="cib-floating item-flamingo" title="Flamingo">🦩</span>
+                        <span class="cib-floating item-sword" title="Qurol">🗡️</span>
                     </div>
                 </div>
 
-                <!-- Catalog Grid -->
-                <div class="catalog-section">
-                    <h3 class="section-title">🌟 TELEGRAM STARS</h3>
+                <!-- Qurollar qatori va o'ng tomonda Animated Ruletka belgisi! -->
+                <div class="weapons-roulette-section">
+                    <div class="section-header-row">
+                        <h3 class="section-title">
+                            <span class="st-icon">⚔️</span> LA’NATLANGAN OROL QUROLLARI
+                        </h3>
+                        <span class="section-subtitle">Nodir qurollar va interaktiv ruletka</span>
+                    </div>
+
+                    <div class="weapons-row-container">
+                        <!-- Qurollar qatori (Horizontal Scrollable) -->
+                        <div class="weapons-scroll-track">
+                            <div class="weapon-item-card epic">
+                                <span class="wic-icon">🔫</span>
+                                <span class="wic-name">Vulqon AK-47</span>
+                                <span class="wic-price">35,000 UZS</span>
+                            </div>
+                            <div class="weapon-item-card rare">
+                                <span class="wic-icon">🏹</span>
+                                <span class="wic-name">Flamingo Kamoni</span>
+                                <span class="wic-price">15,000 UZS</span>
+                            </div>
+                            <div class="weapon-item-card legendary">
+                                <span class="wic-icon">🗡️</span>
+                                <span class="wic-name">La'natlangan Machete</span>
+                                <span class="wic-price">20,000 UZS</span>
+                            </div>
+                            <div class="weapon-item-card common">
+                                <span class="wic-icon">🔱</span>
+                                <span class="wic-name">Zaharli Nayza</span>
+                                <span class="wic-price">12,000 UZS</span>
+                            </div>
+                            <div class="weapon-item-card mythic">
+                                <span class="wic-icon">💎</span>
+                                <span class="wic-name">Qora Olmos Xanjari</span>
+                                <span class="wic-price">80,000 UZS</span>
+                            </div>
+                            <div class="weapon-item-card rare">
+                                <span class="wic-icon">💥</span>
+                                <span class="wic-name">Magma Pistoleti</span>
+                                <span class="wic-price">25,000 UZS</span>
+                            </div>
+                        </div>
+
+                        <!-- Qurollar qatorining o'ng tomonida o'yin elementini bildiruvchi ANIMATED RULETKA BELGISI -->
+                        <div class="animated-roulette-trigger" onclick="openRouletteModal()" title="Qurollar ruletkasini aylantirish!">
+                            <div class="roulette-wheel-wrapper">
+                                <div class="roulette-wheel-icon">🎡</div>
+                                <div class="roulette-pulse-ring"></div>
+                            </div>
+                            <span class="art-title">RULETKA</span>
+                            <span class="art-badge">10,000 UZS</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- La'natlangan Orol Keyslari (Flamingo, Vulqon va h.k.) -->
+                <div id="cursed-cases-section" class="cases-showcase-section">
+                    <div class="section-header-row">
+                        <h3 class="section-title">
+                            <span class="st-icon">📦</span> LA’NATLANGAN OROL KEYSLARI
+                        </h3>
+                        <span class="section-subtitle">Xarid qilish va omadni sinash</span>
+                    </div>
+
+                    <div class="island-cases-grid">
+                        <!-- 1. Flamingo Keysi -->
+                        <div class="island-case-box flamingo" onclick="openCaseModal('flamingo')">
+                            <span class="icb-badge">🦩 Pushti Flamingo</span>
+                            <div class="icb-icon-area">
+                                <div class="icb-glow pink"></div>
+                                <span class="icb-emoji">🦩</span>
+                            </div>
+                            <h4 class="icb-name">Flamingo Keysi</h4>
+                            <p class="icb-sub">Pushti flamingo kamoni va tropik qurollar</p>
+                            <div class="icb-price">15,000 UZS</div>
+                            <button class="btn-icb-action">Ochish 🦩</button>
+                        </div>
+
+                        <!-- 2. Vulqon Keysi -->
+                        <div class="island-case-box volcano" onclick="openCaseModal('volcano')">
+                            <span class="icb-badge">🌋 Olovli Magma</span>
+                            <div class="icb-icon-area">
+                                <div class="icb-glow orange"></div>
+                                <span class="icb-emoji">🌋</span>
+                            </div>
+                            <h4 class="icb-name">Vulqon Keysi</h4>
+                            <p class="icb-sub">Olovli AK-47 va vulqon to'pponchasi</p>
+                            <div class="icb-price">25,000 UZS</div>
+                            <button class="btn-icb-action volcano">Ochish 🌋</button>
+                        </div>
+
+                        <!-- 3. La'natlangan Orol Keysi -->
+                        <div class="island-case-box cursed" onclick="openCaseModal('cursed')">
+                            <span class="icb-badge">☠️ Xavfli Orol</span>
+                            <div class="icb-icon-area">
+                                <div class="icb-glow purple"></div>
+                                <span class="icb-emoji">🌴</span>
+                            </div>
+                            <h4 class="icb-name">La’natlangan Orol</h4>
+                            <p class="icb-sub">La'natlangan machete va zaharli nayza</p>
+                            <div class="icb-price">40,000 UZS</div>
+                            <button class="btn-icb-action">Ochish 🌴</button>
+                        </div>
+
+                        <!-- 4. Qadimiy Ma'bada Keysi -->
+                        <div class="island-case-box temple" onclick="openCaseModal('temple')">
+                            <span class="icb-badge">🗿 Qadimiy Xazina</span>
+                            <div class="icb-icon-area">
+                                <div class="icb-glow yellow"></div>
+                                <span class="icb-emoji">🗿</span>
+                            </div>
+                            <h4 class="icb-name">Qadimiy Ma’bada</h4>
+                            <p class="icb-sub">Oltin qilich va qora olmos xanjari</p>
+                            <div class="icb-price">60,000 UZS</div>
+                            <button class="btn-icb-action">Ochish 🗿</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram Stars & Premium Katalogi (Barchasi UZS formatida) -->
+                <div class="catalog-section" style="margin-top: 30px;">
+                    <h3 class="section-title">🌟 TELEGRAM STARS XARIDI</h3>
                     <div id="stars-catalog" class="catalog-grid">
-                        <!-- Loaded dynamically -->
                         <div class="loading-placeholder">Yuklanmoqda...</div>
                     </div>
 
-                    <h3 class="section-title" style="margin-top: 24px;">💎 TELEGRAM PREMIUM</h3>
+                    <h3 class="section-title" style="margin-top: 24px;">💎 TELEGRAM PREMIUM OBUNASI</h3>
                     <div id="premium-catalog" class="catalog-grid">
-                        <!-- Loaded dynamically -->
                         <div class="loading-placeholder">Yuklanmoqda...</div>
                     </div>
                 </div>
+
             </section>
 
             <!-- TAB 2: Balans (Add Funds) -->
             <section id="tab-balance" class="tab-content">
                 <div class="page-title-section">
                     <h2>Balansni to'ldirish</h2>
-                    <p>Kartamga o'tkazma qiling, chek rasmini yuklang — admin tasdiqlagach pul balansingizga tushadi</p>
+                    <p>Kartamga o'tkazma qiling, chek rasmini yuklang — admin tasdiqlagach mablag' hisobingizga tushadi</p>
                 </div>
 
                 <div class="balance-card-container static-balance">
                     <div class="balance-details">
-                        <span class="balance-title">Joriy balans:</span>
+                        <span class="balance-title">Hisobingiz:</span>
                         <h2 id="deposit-balance-amount" class="balance-amount">0 UZS</h2>
                     </div>
                 </div>
@@ -102,13 +233,13 @@
                 <div class="payment-methods-grid" style="grid-template-columns: 1fr; gap: 10px;">
                     <div class="payment-method-card active" style="flex-direction: row; justify-content: space-between; padding: 12px 16px; cursor: default;">
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <i data-lucide="credit-card" style="width: 22px; height: 22px; color: #a855f7;"></i>
+                            <i data-lucide="credit-card" style="width: 22px; height: 22px; color: #f59e0b;"></i>
                             <div style="display: flex; flex-direction: column; align-items: flex-start;">
                                 <span class="pm-name" style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Karta-to-Karta (Humo/Uzcard)</span>
                                 <span style="font-size: 10px; color: var(--text-secondary);">Kartamga o'tkazma qiling va chek yuklang</span>
                             </div>
                         </div>
-                        <i class="pm-check" data-lucide="check-circle-2" style="position: static; opacity: 1;"></i>
+                        <i class="pm-check" data-lucide="check-circle-2" style="position: static; opacity: 1; color: #10b981;"></i>
                     </div>
                 </div>
 
@@ -130,7 +261,7 @@
                             <div class="card-field">
                                 <span class="field-label">Karta raqami:</span>
                                 <div class="card-number-wrapper">
-                                    <span id="card-number" class="field-value">8600 1204 5678 9012</span>
+                                    <span id="card-number" class="field-value">9860 6004 0697 7147</span>
                                     <button class="btn-copy" onclick="copyCardNumber()">
                                         <i data-lucide="copy" size="14"></i> Nusxa
                                     </button>
@@ -138,7 +269,7 @@
                             </div>
                             <div class="card-field">
                                 <span class="field-label">Karta egasi:</span>
-                                <span id="card-owner" class="field-value">IBROHIM KH.</span>
+                                <span id="card-owner" class="field-value">XUJAMURATOVA ZARGUL</span>
                             </div>
                         </div>
                     </div>
@@ -186,18 +317,16 @@
 
                 <!-- Sub-tab: Orders History -->
                 <div id="history-orders-container" class="history-list-container active">
-                    <!-- Loaded dynamically -->
                     <div class="loading-placeholder">Yuklanmoqda...</div>
                 </div>
 
                 <!-- Sub-tab: Deposits History -->
                 <div id="history-deposits-container" class="history-list-container">
-                    <!-- Loaded dynamically -->
                     <div class="loading-placeholder">Yuklanmoqda...</div>
                 </div>
             </section>
 
-            <!-- TAB 4: Profil (Profile) -->
+            <!-- TAB 4: Profil (Kirish Kabineti) -->
             <section id="tab-profile" class="tab-content">
                 <div class="profile-card">
                     <div class="profile-avatar-wrapper">
@@ -205,7 +334,16 @@
                     </div>
                     <h3 id="profile-name">IBROHIM</h3>
                     <p id="profile-username">@IBROHIMBOI_UC</p>
-                    <span id="profile-id" class="profile-badge">ID: 5721221489</span>
+                    <!-- Foydalanuvchi IDsi: alohida "ID: mine_user_99" shaklida -->
+                    <span id="profile-id" class="profile-badge">ID: mine_user_99</span>
+                </div>
+
+                <div class="profile-balance-highlight">
+                    <span class="pbh-label">Hisobingiz:</span>
+                    <h2 class="pbh-value" id="profile-balance-display">0 UZS</h2>
+                    <button class="btn-primary btn-sm" onclick="switchTab('balance')">
+                        <i data-lucide="plus"></i> To'ldirish
+                    </button>
                 </div>
 
                 <div class="profile-stats-grid">
@@ -222,14 +360,14 @@
                 </div>
 
                 <div class="profile-menu">
-                    <a id="link-news" href="https://t.me/" target="_blank" class="profile-menu-item">
+                    <a id="link-news" href="https://t.me/YAKUDZA_UC_NEWS" target="_blank" class="profile-menu-item">
                         <div class="pmi-left">
                             <i data-lucide="megaphone"></i>
                             <span>Yangiliklar kanali</span>
                         </div>
                         <i data-lucide="chevron-right" class="pmi-arrow"></i>
                     </a>
-                    <a id="link-support" href="https://t.me/" target="_blank" class="profile-menu-item">
+                    <a id="link-support" href="https://t.me/yakfast_support" target="_blank" class="profile-menu-item">
                         <div class="pmi-left">
                             <i data-lucide="headset"></i>
                             <span>Qo'llab-quvvatlash xizmati</span>
@@ -239,13 +377,163 @@
                 </div>
 
                 <div class="app-footer-brand">
-                    <span>@yakfast_bot</span>
+                    <span>MINE • AntiGravity (v1.2) • @starsketakbot</span>
                 </div>
             </section>
 
         </main>
 
-        <!-- Buy Modal (Modal Dialog) -->
+        <!-- ==============================================
+             MODALLAR
+        =============================================== -->
+
+        <!-- 1. QUROLLAR RULETKASI MODALI (Animated Roulette) -->
+        <div id="roulette-modal" class="modal-overlay">
+            <div class="modal-content roulette-box">
+                <div class="modal-header">
+                    <div class="rm-header-left">
+                        <span class="rmh-icon">🎡</span>
+                        <div>
+                            <h3>La’natlangan Orol Ruletkasi</h3>
+                            <span class="rmh-sub">Har bir aylantirish: <strong>10,000 UZS</strong></span>
+                        </div>
+                    </div>
+                    <button class="btn-close-modal" onclick="closeRouletteModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Ruletka Markaziy Ko'rsatkichi va Tasmali Viewport -->
+                    <div class="roulette-track-wrapper">
+                        <div class="roulette-center-marker"></div>
+                        <div class="roulette-track-viewport">
+                            <div id="roulette-track" class="roulette-track">
+                                <!-- Populated dynamically with weapons -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mumkin bo'lgan qurollar ro'yxati -->
+                    <div class="roulette-loot-preview">
+                        <span class="rlp-label">Mumkin bo'lgan qurollar va qiymatlar:</span>
+                        <div class="rlp-grid">
+                            <span class="rlp-item">💎 Qora Olmos Xanjari (80,000 UZS)</span>
+                            <span class="rlp-item">⚔️ Oltin Qilich (50,000 UZS)</span>
+                            <span class="rlp-item">🔫 Vulqon AK-47 (35,000 UZS)</span>
+                            <span class="rlp-item">💥 Magma Pistoleti (25,000 UZS)</span>
+                            <span class="rlp-item">🗡️ La'natlangan Machete (20,000 UZS)</span>
+                            <span class="rlp-item">🏹 Flamingo Kamoni (15,000 UZS)</span>
+                            <span class="rlp-item">🔱 Zaharli Nayza (12,000 UZS)</span>
+                        </div>
+                    </div>
+
+                    <div class="roulette-balance-status">
+                        <span>Hisobingiz: <strong id="roulette-user-balance">0 UZS</strong></span>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="btn-spin-roulette" class="btn-primary btn-full-width" onclick="spinRoulette()">
+                        <i data-lucide="sparkles"></i> 10,000 UZS — Ruletkani Aylantirish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. G'ALABA OYNASI (Won Weapon Celebration) -->
+        <div id="won-weapon-modal" class="modal-overlay">
+            <div class="modal-content won-box">
+                <div class="won-header-badge">YANGI QUROL YUTIB OLDINGIZ!</div>
+                <div class="won-weapon-display">
+                    <span id="won-weapon-icon" class="wwd-icon">🔫</span>
+                    <h3 id="won-weapon-name" class="wwd-name">Olovli Vulqon AK-47</h3>
+                    <span id="won-weapon-value" class="wwd-value">Qiymati: 35,000 UZS</span>
+                </div>
+                <div class="won-actions">
+                    <button class="btn-primary btn-full-width" onclick="sellWonWeapon()">
+                        <i data-lucide="coins"></i> Hisobimga sotish (+<span id="won-sell-amount">35,000</span> UZS)
+                    </button>
+                    <button class="btn-secondary btn-full-width" onclick="keepWonWeapon()" style="margin-top: 8px;">
+                        Inventarga saqlash
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. LA'NATLANGAN OROL KEYSI OCHISH MODALI -->
+        <div id="case-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="case-modal-icon" style="font-size: 24px;">🦩</span>
+                        <h3 id="case-modal-title">Flamingo Keysi</h3>
+                    </div>
+                    <button class="btn-close-modal" onclick="closeCaseModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="case-detail-card">
+                        <p id="case-modal-desc">Pushti flamingo kamoni va tropik qurollar</p>
+                        <div class="case-modal-price-tag">
+                            <span>Narxi:</span>
+                            <strong id="case-modal-price">15,000 UZS</strong>
+                        </div>
+                    </div>
+                    <div class="case-balance-check">
+                        <span>Hisobingiz: <strong id="case-user-balance">0 UZS</strong></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-confirm-open-case" class="btn-primary btn-full-width" onclick="confirmOpenCase()">
+                        Keysni Ochish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. KIRISH KABINETI (LOGIN MODAL) -->
+        <div id="login-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Kirish kabineti</h3>
+                    <button class="btn-close-modal" onclick="closeLoginModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="cabinet-user-preview">
+                        <img id="login-avatar-preview" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                        <div>
+                            <h4 id="login-user-name">IBROHIM</h4>
+                            <span class="user-mine-id" id="login-user-id">ID: mine_user_99</span>
+                        </div>
+                    </div>
+                    <div class="cabinet-info-box">
+                        <div class="cib-item">
+                            <span>Tizim:</span>
+                            <strong>AntiGravity (v1.2)</strong>
+                        </div>
+                        <div class="cib-item">
+                            <span>Hisobingiz:</span>
+                            <strong id="login-user-balance">0 UZS</strong>
+                        </div>
+                        <div class="cib-item">
+                            <span>Holat:</span>
+                            <span class="status-online">● Faol (Telegram orqali ulangan)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary btn-full-width" onclick="closeLoginModal()">
+                        Tushunarli
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. BUY MODAL (Stars & Premium Catalog Purchase) -->
         <div id="buy-modal" class="modal-overlay">
             <div class="modal-content">
                 <div class="modal-header">
@@ -275,7 +563,7 @@
                     <div class="wallet-payment-check">
                         <span class="wpc-label">Balansdan to'lash:</span>
                         <div class="wpc-row">
-                            <span class="wpc-balance" id="modal-user-balance">Mening balansim: 0 UZS</span>
+                            <span class="wpc-balance" id="modal-user-balance">Hisobingiz: 0 UZS</span>
                             <span class="wpc-status" id="modal-balance-status">Etarli emas</span>
                         </div>
                     </div>
