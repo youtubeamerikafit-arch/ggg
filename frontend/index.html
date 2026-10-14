@@ -2,188 +2,684 @@
 <html lang="uz">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel — To'lovlarni ko'rish</title>
-    <style>
-        :root { color-scheme: dark; }
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background: #0f172a;
-            color: #e2e8f0;
-            padding: 24px;
-        }
-        .container { max-width: 1100px; margin: 0 auto; }
-        .card { background: #111827; border: 1px solid #334155; border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-        .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-        .item { background: #1f2937; border: 1px solid #374151; border-radius: 12px; padding: 14px; cursor: pointer; }
-        .item.active { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.25); }
-        .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
-        button { padding: 10px 14px; border: 0; border-radius: 10px; cursor: pointer; font-weight: 700; }
-        .btn-approve { background: #16a34a; color: white; }
-        .btn-reject { background: #dc2626; color: white; }
-        .btn-secondary { background: #334155; color: white; }
-        input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #475569; background: #0f172a; color: white; }
-        img { width: 100%; max-width: 420px; border-radius: 12px; border: 1px solid #475569; margin-top: 10px; }
-        .muted { color: #94a3b8; }
-        .hidden { display: none; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>STARS DROP — Telegram Gifts & Cases</title>
+    <!-- Google Fonts: Outfit & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Telegram WebApp JS SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Canvas Confetti for WOW Celebration Effects -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <div class="card">
-            <h1>Admin panel</h1>
-            <p class="muted">To'lov cheklari va tasdiqlash uchun panel.</p>
-            <form id="login-form">
-                <label for="admin-key">Admin parol</label>
-                <input id="admin-key" type="password" placeholder="Parolni kiriting" required>
-                <div class="controls">
-                    <button class="btn-secondary" type="submit">Kirish</button>
-                    <button class="btn-secondary" type="button" id="logout-btn">Chiqish</button>
+    <!-- App Container -->
+    <div id="app-container">
+        
+        <!-- Header (Patrick Games / Stars Drop Style) -->
+        <header class="app-header">
+            <div class="brand-logo-section">
+                <span class="brand-title">STARS<span class="brand-accent">DROP</span></span>
+            </div>
+            
+            <div class="header-right-section">
+                <div class="user-avatar-badge" onclick="switchTab('profile')">
+                    <img id="user-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                    <span id="user-display-name">IBROHIM</span>
                 </div>
-            </form>
+                
+                <!-- Stars Balance Pill (Matching Image 2: ⭐ 25 with plus) -->
+                <div class="header-stars-badge" onclick="openConvertModal()">
+                    <span class="star-icon">⭐</span>
+                    <span id="header-stars-amount">25</span>
+                    <button class="btn-quick-add" title="Stars sotib olish">+</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- LIVE Drops Ticker (Matching Image 2 Top Live Strip) -->
+        <div class="live-ticker-bar">
+            <div class="live-indicator">
+                <span class="live-dot"></span>
+                <span class="live-text">Live</span>
+            </div>
+            <div class="live-drops-viewport">
+                <div id="live-drops-track" class="live-drops-track">
+                    <!-- Populated dynamically via JS -->
+                    <div class="live-drop-card epic">
+                        <span class="ld-icon">🍪</span>
+                        <div class="ld-info">
+                            <span class="ld-name">Ginger Cookie</span>
+                            <span class="ld-stars">362 ⭐</span>
+                        </div>
+                    </div>
+                    <div class="live-drop-card rare">
+                        <span class="ld-icon">🧸</span>
+                        <div class="ld-info">
+                            <span class="ld-name">Teddy Bear</span>
+                            <span class="ld-stars">15 ⭐</span>
+                        </div>
+                    </div>
+                    <div class="live-drop-card common">
+                        <span class="ld-icon">💖</span>
+                        <div class="ld-info">
+                            <span class="ld-name">Heart</span>
+                            <span class="ld-stars">15 ⭐</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div id="admin-content" class="hidden">
-            <div class="card">
-                <h2>Kutilayotgan to'lovlar</h2>
-                <div id="deposit-list" class="grid"></div>
-            </div>
-            <div class="card">
-                <h3 id="selected-title">Chekni tanlang</h3>
-                <div id="selected-details" class="muted"></div>
-                <div id="receipt-preview"></div>
-                <div class="controls">
-                    <button class="btn-approve hidden" id="approve-btn">Tasdiqlash ✅</button>
-                    <button class="btn-reject hidden" id="reject-btn">Rad etish ❌</button>
+        <!-- Main Content Area -->
+        <main class="app-main-content">
+            
+            <!-- ==============================================
+                 TAB 1: KEYSLAR (CASES - Bosh Sahifa)
+            =============================================== -->
+            <section id="tab-cases" class="tab-content active">
+                
+                <!-- Hero Promo Banner (Matching Image 2 Patrick Banner) -->
+                <div class="hero-promo-banner">
+                    <div class="hp-content">
+                        <div class="hp-badge">AKSIYA 🔥</div>
+                        <h2>BIRINCHI TO'LDIRISHGA +20% BONUS!</h2>
+                        <p>14 Starsga Case oching va 362⭐ lik Telegram Giftlarni yutib oling!</p>
+                        <button class="btn-hero-action" onclick="scrollToCase('case_14')">
+                            <span>Keys Ochish</span> <i data-lucide="sparkles"></i>
+                        </button>
+                    </div>
+                    <div class="hp-visual">
+                        <span class="floating-hero-gift g1">🍪</span>
+                        <span class="floating-hero-gift g2">🧸</span>
+                        <span class="floating-hero-gift g3">⭐</span>
+                    </div>
+                </div>
+
+                <!-- Category Filters (Matching Image 2: ВСЕ, БЕСПЛАТНЫЕ, etc.) -->
+                <div class="category-filters-container">
+                    <button class="cat-pill active" onclick="filterCases('all', this)">
+                        <i data-lucide="rocket"></i> BARCHASI
+                    </button>
+                    <button class="cat-pill" onclick="filterCases('stars_14', this)">
+                        <i data-lucide="star"></i> 14 STARS KEYSLAR
+                    </button>
+                    <button class="cat-pill" onclick="filterCases('gifts', this)">
+                        <i data-lucide="gift"></i> TELEGRAM GIFTS
+                    </button>
+                    <button class="cat-pill" onclick="filterCases('vip', this)">
+                        <i data-lucide="crown"></i> VIP KEYSLAR
+                    </button>
+                    <button class="cat-pill" onclick="filterCases('free', this)">
+                        <i data-lucide="sparkle"></i> BEPUL KEYSLAR
+                    </button>
+                    <button class="cat-pill" onclick="filterCases('shop', this)">
+                        <i data-lucide="shopping-bag"></i> DO'KON
+                    </button>
+                </div>
+
+                <!-- Cases Section Title -->
+                <div class="section-header-row">
+                    <h3 class="section-title">
+                        <span class="st-icon">📦</span> TELEGRAM KEYS VA RULETKALARI
+                    </h3>
+                    <span class="section-subtitle">Omadingizni sinab ko'ring</span>
+                </div>
+
+                <!-- Cases Grid (Cases Loaded Dynamically) -->
+                <div id="cases-grid" class="cases-grid">
+                    <!-- Loading skeleton -->
+                    <div class="case-loading-card">
+                        <div class="cl-box"></div>
+                        <div class="cl-title"></div>
+                    </div>
+                </div>
+
+                <!-- Telegram Stars & Premium Shop Catalog (Toggleable) -->
+                <div id="shop-catalog-section" class="shop-catalog-section">
+                    <div class="section-header-row" style="margin-top: 30px;">
+                        <h3 class="section-title">
+                            <span class="st-icon">🌟</span> TO'G'RIDAN-TO'G'RI STARS VA PREMIUM SOTIB OLISH
+                        </h3>
+                    </div>
+                    
+                    <h4 class="sub-category-title">🌟 TELEGRAM STARS PAKETLARI</h4>
+                    <div id="stars-catalog" class="catalog-grid">
+                        <div class="loading-placeholder">Yuklanmoqda...</div>
+                    </div>
+
+                    <h4 class="sub-category-title" style="margin-top: 20px;">💎 TELEGRAM PREMIUM OBUNASI</h4>
+                    <div id="premium-catalog" class="catalog-grid">
+                        <div class="loading-placeholder">Yuklanmoqda...</div>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- ==============================================
+                 TAB 2: MINI-O'YINLAR (WHEEL OF FORTUNE)
+            =============================================== -->
+            <section id="tab-minigames" class="tab-content">
+                <div class="page-title-section">
+                    <h2>🎡 Omad Charxi</h2>
+                    <p>10 ⭐ evaziga g'ildirakni aylantiring va yirik Telegram sovg'alari yoki Stars yutib oling!</p>
+                </div>
+
+                <!-- Wheel of Fortune Container -->
+                <div class="wheel-game-container">
+                    <div class="wheel-outer-ring">
+                        <div class="wheel-pointer-arrow">▼</div>
+                        <canvas id="wheel-canvas" width="320" height="320"></canvas>
+                        <div class="wheel-center-pin">
+                            <span>⭐</span>
+                        </div>
+                    </div>
+                    
+                    <div class="wheel-controls">
+                        <button id="btn-spin-wheel" class="btn-spin-wheel" onclick="spinWheel()">
+                            <i data-lucide="sparkles"></i> 10 ⭐ Charxni Aylantirish
+                        </button>
+                        <span class="wheel-cost-hint">Hisobingizdan 10 Stars yechiladi</span>
+                    </div>
+
+                    <!-- Possible wheel prizes list -->
+                    <div class="wheel-prizes-preview">
+                        <h4>Mumkin bo'lgan yutuqlar:</h4>
+                        <div class="prizes-mini-list">
+                            <span class="pml-badge">🍪 362 ⭐</span>
+                            <span class="pml-badge">👑 250 ⭐</span>
+                            <span class="pml-badge">🍾 100 ⭐</span>
+                            <span class="pml-badge">🎂 50 ⭐</span>
+                            <span class="pml-badge">🌹 25 ⭐</span>
+                            <span class="pml-badge">🧸 15 ⭐</span>
+                            <span class="pml-badge">💖 15 ⭐</span>
+                            <span class="pml-badge">⭐ 10 Stars</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 TAB 3: REYTING (LEADERBOARD)
+            =============================================== -->
+            <section id="tab-leaderboard" class="tab-content">
+                <div class="page-title-section">
+                    <h2>🏆 Top G'oliblar</h2>
+                    <p>Hafta va oy davomida eng ko'p sovg'a yutgan faol o'yinchilar</p>
+                </div>
+
+                <!-- Podium (Top 3) -->
+                <div class="leaderboard-podium">
+                    <div class="podium-item rank-2">
+                        <div class="podium-crown">🥈</div>
+                        <div class="podium-avatar">
+                            <img src="https://ui-avatars.com/api/?name=Sardor&background=0284c7&color=fff" alt="2nd">
+                        </div>
+                        <span class="podium-name">Sardor</span>
+                        <span class="podium-score">1,820 ⭐</span>
+                        <div class="podium-stand stand-2">2</div>
+                    </div>
+                    
+                    <div class="podium-item rank-1">
+                        <div class="podium-crown">👑</div>
+                        <div class="podium-avatar">
+                            <img src="https://ui-avatars.com/api/?name=IBROHIM&background=f59e0b&color=fff" alt="1st">
+                        </div>
+                        <span class="podium-name">IBROHIM</span>
+                        <span class="podium-score">3,650 ⭐</span>
+                        <div class="podium-stand stand-1">1</div>
+                    </div>
+
+                    <div class="podium-item rank-3">
+                        <div class="podium-crown">🥉</div>
+                        <div class="podium-avatar">
+                            <img src="https://ui-avatars.com/api/?name=Javohir&background=9333ea&color=fff" alt="3rd">
+                        </div>
+                        <span class="podium-name">Javohir</span>
+                        <span class="podium-score">1,240 ⭐</span>
+                        <div class="podium-stand stand-3">3</div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard List -->
+                <div class="leaderboard-list">
+                    <div class="lb-row">
+                        <span class="lb-rank">#4</span>
+                        <div class="lb-user">
+                            <span class="lb-name">Alisher Kh.</span>
+                            <span class="lb-drops">14 ta keys ochgan</span>
+                        </div>
+                        <span class="lb-value">980 ⭐</span>
+                    </div>
+                    <div class="lb-row">
+                        <span class="lb-rank">#5</span>
+                        <div class="lb-user">
+                            <span class="lb-name">Madina</span>
+                            <span class="lb-drops">9 ta keys ochgan</span>
+                        </div>
+                        <span class="lb-value">750 ⭐</span>
+                    </div>
+                    <div class="lb-row">
+                        <span class="lb-rank">#6</span>
+                        <div class="lb-user">
+                            <span class="lb-name">Doniyor B.</span>
+                            <span class="lb-drops">7 ta keys ochgan</span>
+                        </div>
+                        <span class="lb-value">620 ⭐</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==============================================
+                 TAB 4: PROFIL, INVENTAR & BALANS
+            =============================================== -->
+            <section id="tab-profile" class="tab-content">
+                <!-- User Profile Card -->
+                <div class="profile-hero-card">
+                    <div class="ph-avatar-wrap">
+                        <img id="profile-avatar" src="https://img.icons8.com/color/96/avatar.png" alt="Avatar">
+                    </div>
+                    <div class="ph-details">
+                        <h3 id="profile-name">IBROHIM</h3>
+                        <p id="profile-username">@IBROHIMBOI_UC</p>
+                        <span id="profile-id" class="ph-id-pill">ID: 5721221489</span>
+                    </div>
+                </div>
+
+                <!-- Combined Dual Balance Card -->
+                <div class="dual-balance-card">
+                    <div class="db-col">
+                        <span class="db-label">STARS BALANSI:</span>
+                        <h3 class="db-value stars"><span class="star-icon">⭐</span> <span id="profile-stars-amount">25</span></h3>
+                        <button class="btn-balance-action gold" onclick="openConvertModal()">
+                            <i data-lucide="refresh-cw"></i> Stars Olish
+                        </button>
+                    </div>
+                    <div class="db-divider"></div>
+                    <div class="db-col">
+                        <span class="db-label">UZS HAMYON:</span>
+                        <h3 class="db-value uzs" id="profile-uzs-amount">0 UZS</h3>
+                        <button class="btn-balance-action" onclick="switchProfileSection('deposit')">
+                            <i data-lucide="plus"></i> To'ldirish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Profile Sub Navigation (Inventar / Depozit / Tarix) -->
+                <div class="profile-sub-tabs">
+                    <button class="pst-btn active" onclick="switchProfileSection('inventory')">
+                        <i data-lucide="backpack"></i> Inventar (<span id="profile-inv-count">0</span>)
+                    </button>
+                    <button class="pst-btn" onclick="switchProfileSection('deposit')">
+                        <i data-lucide="credit-card"></i> To'ldirish
+                    </button>
+                    <button class="pst-btn" onclick="switchProfileSection('history')">
+                        <i data-lucide="history"></i> Tarix
+                    </button>
+                </div>
+
+                <!-- Sub-Section: INVENTORY -->
+                <div id="psec-inventory" class="profile-sub-content active">
+                    <div class="inventory-header-row">
+                        <h4>Mening Yutuqlarim (Telegram Gifts)</h4>
+                        <span class="inv-hint">Sovg'ani balansga soting yoki Telegramga oling</span>
+                    </div>
+                    <div id="user-inventory-grid" class="inventory-grid">
+                        <div class="empty-inventory">
+                            <div class="empty-icon-box">🎒</div>
+                            <h3>Inventaringiz hozircha bo'sh</h3>
+                            <p>14 Starsga Case oching va birinchi Telegram sovgangizni yutib oling!</p>
+                            <button class="btn-primary" onclick="switchTab('cases')" style="margin-top: 12px;">
+                                Keys ochishga o'tish 🚀
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sub-Section: DEPOSIT (Add Funds) -->
+                <div id="psec-deposit" class="profile-sub-content">
+                    <div class="payment-form-container">
+                        <div class="input-group">
+                            <label for="deposit-amount">To'lov summasi (UZS)</label>
+                            <div class="input-with-icon">
+                                <i data-lucide="coins"></i>
+                                <input type="number" id="deposit-amount" placeholder="Minimal 5,000 UZS" min="5000">
+                            </div>
+                        </div>
+
+                        <div id="card-details-box" class="card-details-box">
+                            <div class="card-header">
+                                <span>To'lov uchun karta ma'lumotlari:</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-field">
+                                    <span class="field-label">Karta raqami:</span>
+                                    <div class="card-number-wrapper">
+                                        <span id="card-number" class="field-value">8600 1204 5678 9012</span>
+                                        <button class="btn-copy" onclick="copyCardNumber()">
+                                            <i data-lucide="copy" size="14"></i> Nusxa
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-field">
+                                    <span class="field-label">Karta egasi:</span>
+                                    <span id="card-owner" class="field-value">IBROHIM KH.</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="receipt-upload-box">
+                            <p class="upload-instructions">
+                                To'lovni amalga oshirgach, chek rasmini yuklang. To'lov tasdiqlangach pul balansingizga tushadi.
+                            </p>
+                            
+                            <div class="file-upload-wrapper">
+                                <input type="file" id="receipt-file" accept="image/*" onchange="handleFileSelect(event)">
+                                <div id="upload-trigger" class="upload-area">
+                                    <i data-lucide="image" class="upload-icon"></i>
+                                    <span id="upload-status-text">Chek rasmini tanlang</span>
+                                    <span class="upload-subtext">JPEG, PNG formatlari (Max 10MB)</span>
+                                </div>
+                                <img id="receipt-preview" src="#" alt="Chek nusxasi" style="display: none;">
+                            </div>
+                        </div>
+
+                        <button id="btn-submit-deposit" class="btn-primary" onclick="submitDeposit()">
+                            <i data-lucide="send"></i> To'lovni tekshirishga yuborish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sub-Section: HISTORY -->
+                <div id="psec-history" class="profile-sub-content">
+                    <div id="history-container" class="history-list-container active">
+                        <div class="loading-placeholder">Yuklanmoqda...</div>
+                    </div>
+                </div>
+
+                <!-- Social Links -->
+                <div class="profile-menu">
+                    <a id="link-news" href="https://t.me/YAKUDZA_UC_NEWS" target="_blank" class="profile-menu-item">
+                        <div class="pmi-left">
+                            <i data-lucide="megaphone"></i>
+                            <span>Yangiliklar kanali</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="pmi-arrow"></i>
+                    </a>
+                    <a id="link-support" href="https://t.me/yakfast_support" target="_blank" class="profile-menu-item">
+                        <div class="pmi-left">
+                            <i data-lucide="headset"></i>
+                            <span>Qo'llab-quvvatlash xizmati</span>
+                        </div>
+                        <i data-lucide="chevron-right" class="pmi-arrow"></i>
+                    </a>
+                </div>
+
+                <div class="app-footer-brand">
+                    <span>STARS DROP © 2026 • @patrickgamesbot style</span>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ==============================================
+             MODALS SECTION
+        =============================================== -->
+
+        <!-- 1. CS:GO / TELEGRAM STYLE CASE OPENING ROULETTE MODAL -->
+        <div id="roulette-modal" class="modal-overlay">
+            <div class="roulette-modal-content">
+                <div class="roulette-modal-header">
+                    <div class="rmh-left">
+                        <span id="rm-case-icon" class="rm-icon">🧸</span>
+                        <div>
+                            <h3 id="rm-case-name">Teddy & Hearts</h3>
+                            <span id="rm-case-price" class="rm-price">14 ⭐</span>
+                        </div>
+                    </div>
+                    <button class="btn-close-modal" onclick="closeRouletteModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+
+                <!-- Roulette Viewport with Center Indicator Needle -->
+                <div class="roulette-carousel-wrapper">
+                    <div class="roulette-center-needle"></div>
+                    <div class="roulette-viewport">
+                        <div id="roulette-tape" class="roulette-tape">
+                            <!-- Populated with 50 items when spinning -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Case Drop Items Preview -->
+                <div class="case-contents-preview">
+                    <span class="ccp-title">Keys ichidagi sovg'alar:</span>
+                    <div id="case-preview-items" class="case-preview-items">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Spin Controls -->
+                <div class="roulette-controls">
+                    <div class="rc-options">
+                        <label class="rc-toggle">
+                            <input type="checkbox" id="fast-spin-toggle">
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">⚡ Tezkor ochish</span>
+                        </label>
+                        <button class="btn-sound-toggle" onclick="toggleSound()" id="sound-toggle-btn" title="Ovoz">
+                            🔊
+                        </button>
+                    </div>
+
+                    <button id="btn-spin-case" class="btn-spin-case" onclick="triggerCaseSpin()">
+                        <span id="spin-button-text">14 ⭐ Keysni Ochish</span>
+                        <i data-lucide="sparkles"></i>
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- 2. WOW WIN CELEBRATION MODAL (WIN POPUP) -->
+        <div id="win-modal" class="modal-overlay">
+            <div class="win-modal-content">
+                <!-- God Rays Rotation Background -->
+                <div class="win-god-rays"></div>
+                
+                <div class="win-badge" id="win-rarity-badge">AFSONAVIY YUTUQ!</div>
+                
+                <div class="win-item-showcase">
+                    <div class="win-item-glow" id="win-item-glow"></div>
+                    <span class="win-item-icon" id="win-item-icon">🍪</span>
+                    <h3 class="win-item-name" id="win-item-name">Ginger Cookie</h3>
+                    <div class="win-item-stars-value">
+                        <span class="star-icon">⭐</span>
+                        <span id="win-item-stars">362 Stars</span>
+                    </div>
+                </div>
+
+                <p class="win-item-prompt">Sovg'a bilan nima qilmoqchisiz?</p>
+
+                <!-- Dual Action Buttons -->
+                <div class="win-actions-grid">
+                    <button id="btn-win-sell" class="btn-win-action sell" onclick="sellWonItem()">
+                        <span class="bwa-top">⭐ Balansga sotish</span>
+                        <span class="bwa-sub" id="btn-sell-subtext">+362 Stars qo'shiladi</span>
+                    </button>
+                    
+                    <button class="btn-win-action keep" onclick="keepWonItem()">
+                        <span class="bwa-top">🎒 Inventarga olish</span>
+                        <span class="bwa-sub">Profilimda saqlash</span>
+                    </button>
+                </div>
+
+                <button class="btn-win-again" onclick="spinAgainFromWin()">
+                    <i data-lucide="refresh-cw"></i> Yana bitta ochish
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. CONVERT UZS TO STARS MODAL -->
+        <div id="convert-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>⭐ Stars sotib olish</h3>
+                    <button class="btn-close-modal" onclick="closeConvertModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <p class="convert-hint">
+                        UZS balansingiz orqali tezkor Stars sotib oling va darhol keyslarni oching! (Kurs: 1 ⭐ = 280 UZS)
+                    </p>
+                    
+                    <div class="quick-stars-presets">
+                        <button class="qsp-btn" onclick="selectConvertPreset(14)">14 ⭐<br><small>3,920 UZS</small></button>
+                        <button class="qsp-btn active" onclick="selectConvertPreset(25)">25 ⭐<br><small>7,000 UZS</small></button>
+                        <button class="qsp-btn" onclick="selectConvertPreset(50)">50 ⭐<br><small>14,000 UZS</small></button>
+                        <button class="qsp-btn" onclick="selectConvertPreset(100)">100 ⭐<br><small>28,000 UZS</small></button>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="convert-stars-input">Stars miqdori:</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="star"></i>
+                            <input type="number" id="convert-stars-input" value="25" min="1" oninput="updateConvertCalc()">
+                        </div>
+                    </div>
+
+                    <div class="calc-result-box">
+                        <div class="crb-row">
+                            <span>To'lanadigan summa:</span>
+                            <strong id="convert-total-uzs">7,000 UZS</strong>
+                        </div>
+                        <div class="crb-row">
+                            <span>Sizning UZS balansingiz:</span>
+                            <span id="convert-user-balance">0 UZS</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-confirm-convert" class="btn-primary btn-full-width" onclick="executeConvertStars()">
+                        ⭐ Starsga almashtirish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. CLAIM GIFT TO TELEGRAM MODAL -->
+        <div id="claim-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>🎁 Sovg'ani qabul qilish</h3>
+                    <button class="btn-close-modal" onclick="closeClaimModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="claim-gift-card">
+                        <span id="claim-gift-icon" class="cgc-icon">🧸</span>
+                        <div class="cgc-details">
+                            <h4 id="claim-gift-name">Teddy Bear</h4>
+                            <span id="claim-gift-stars">15 Stars</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="claim-target-input">Qaysi profilga yuborilsin?</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="at-sign"></i>
+                            <input type="text" id="claim-target-input" placeholder="@username yoki ID">
+                        </div>
+                        <p class="input-help-text">Sovg'a rasmiy Telegram orqali ko'rsatilgan profilga sovg'a (gift) qilinadi.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary btn-full-width" onclick="submitClaimGift()">
+                        Sovg'ani yuborishni so'rash 🚀
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. BUY MODAL (Stars & Premium Catalog Purchase) -->
+        <div id="buy-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Buyurtma berish</h3>
+                    <button class="btn-close-modal" onclick="closeBuyModal()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-product-summary">
+                        <div class="mps-icon" id="modal-prod-icon">🌟</div>
+                        <div class="mps-details">
+                            <h4 id="modal-prod-name">100 Stars</h4>
+                            <span id="modal-prod-price">25,000 UZS</span>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="order-target">Telegram username yoki telefon raqam</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="at-sign"></i>
+                            <input type="text" id="order-target" placeholder="@username yoki +998901234567">
+                        </div>
+                        <p class="input-help-text">Obuna yoki yulduzlar hadya qilinadigan profil ma'lumotini kiriting.</p>
+                    </div>
+
+                    <div class="wallet-payment-check">
+                        <span class="wpc-label">Balansdan to'lash:</span>
+                        <div class="wpc-row">
+                            <span class="wpc-balance" id="modal-user-balance">Mening balansim: 0 UZS</span>
+                            <span class="wpc-status" id="modal-balance-status">Etarli emas</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="btn-confirm-purchase" class="btn-primary btn-full-width" onclick="confirmPurchase()">
+                        Xaridni tasdiqlash
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toast" class="toast-notification">
+            <span id="toast-message">Xabar</span>
+        </div>
+
+        <!-- Sticky Bottom Navigation Bar (Matching Image 2: Кейсы, Мини-игры, Рейтинг, Профиль) -->
+        <footer class="app-footer-navigation">
+            <nav class="nav-tabs">
+                <button class="nav-tab-btn active" onclick="switchTab('cases')">
+                    <i data-lucide="box"></i>
+                    <span>Keyslar</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('minigames')">
+                    <i data-lucide="gamepad-2"></i>
+                    <span>Ruletka</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('leaderboard')">
+                    <i data-lucide="trophy"></i>
+                    <span>Reyting</span>
+                </button>
+                <button class="nav-tab-btn" onclick="switchTab('profile')">
+                    <i data-lucide="user"></i>
+                    <span>Profil</span>
+                </button>
+            </nav>
+        </footer>
+
     </div>
 
-    <script>
-        const form = document.getElementById('login-form');
-        const adminContent = document.getElementById('admin-content');
-        const depositList = document.getElementById('deposit-list');
-        const selectedTitle = document.getElementById('selected-title');
-        const selectedDetails = document.getElementById('selected-details');
-        const receiptPreview = document.getElementById('receipt-preview');
-        const approveBtn = document.getElementById('approve-btn');
-        const rejectBtn = document.getElementById('reject-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        let currentKey = '';
-        let deposits = [];
-        let selectedId = null;
-
-        function getStoredKey() {
-            return localStorage.getItem('adminKey') || '';
-        }
-
-        function setAuth(key) {
-            currentKey = key;
-            localStorage.setItem('adminKey', key);
-            form.classList.add('hidden');
-            adminContent.classList.remove('hidden');
-        }
-
-        function clearAuth() {
-            currentKey = '';
-            localStorage.removeItem('adminKey');
-            adminContent.classList.add('hidden');
-            form.classList.remove('hidden');
-            depositList.innerHTML = '';
-            selectedTitle.textContent = 'Chekni tanlang';
-            selectedDetails.textContent = '';
-            receiptPreview.innerHTML = '';
-            approveBtn.classList.add('hidden');
-            rejectBtn.classList.add('hidden');
-        }
-
-        async function loadDeposits() {
-            if (!currentKey) return;
-            const res = await fetch(`/api/admin/deposits?key=${encodeURIComponent(currentKey)}`);
-            if (!res.ok) {
-                alert('Parol noto\'g\'ri yoki ruxsat yo\'q.');
-                clearAuth();
-                return;
-            }
-            deposits = await res.json();
-            depositList.innerHTML = '';
-            if (!deposits.length) {
-                depositList.innerHTML = '<div class="muted">Hozirda kutilayotgan to\'lovlar yo\'q.</div>';
-                return;
-            }
-            deposits.forEach((deposit) => {
-                const div = document.createElement('div');
-                div.className = 'item';
-                if (selectedId === deposit.id) div.classList.add('active');
-                div.innerHTML = `
-                    <strong>#${deposit.id}</strong><br>
-                    ${deposit.user_name || 'Noma\'lum'}<br>
-                    <span class="muted">${Number(deposit.amount).toLocaleString('uz-UZ')} UZS</span><br>
-                    <span class="muted">${deposit.payment_method || 'manual'}</span>
-                `;
-                div.onclick = () => selectDeposit(deposit.id);
-                depositList.appendChild(div);
-            });
-            if (!selectedId && deposits.length) selectDeposit(deposits[0].id);
-        }
-
-        function selectDeposit(id) {
-            const deposit = deposits.find((d) => d.id === id);
-            if (!deposit) return;
-            selectedId = id;
-            selectedTitle.textContent = `To'lov #${deposit.id}`;
-            selectedDetails.innerHTML = `
-                <strong>Foydalanuvchi:</strong> ${deposit.user_name || 'Noma\'lum'}<br>
-                <strong>User ID:</strong> ${deposit.user_id}<br>
-                <strong>Summa:</strong> ${Number(deposit.amount).toLocaleString('uz-UZ')} UZS<br>
-                <strong>To\'lov turi:</strong> ${deposit.payment_method || 'manual'}<br>
-                <strong>Vaqt:</strong> ${deposit.created_at}
-            `;
-            receiptPreview.innerHTML = `<img src="/api/admin/deposits/${deposit.id}/receipt?key=${encodeURIComponent(currentKey)}" alt="Receipt">`;
-            approveBtn.classList.remove('hidden');
-            rejectBtn.classList.remove('hidden');
-            approveBtn.onclick = () => actionDeposit('approve');
-            rejectBtn.onclick = () => actionDeposit('reject');
-            renderListSelection();
-        }
-
-        function renderListSelection() {
-            [...depositList.children].forEach((child) => {
-                const id = Number(child.textContent.match(/#(\d+)/)?.[1]);
-                child.classList.toggle('active', id === selectedId);
-            });
-        }
-
-        async function actionDeposit(action) {
-            if (!selectedId) return;
-            const url = `/api/admin/deposits/${selectedId}/${action}?key=${encodeURIComponent(currentKey)}`;
-            const res = await fetch(url, { method: 'POST' });
-            const data = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                alert(data.detail || 'Amal bajarilmadi');
-                return;
-            }
-            alert(data.message || 'Yakunlandi');
-            await loadDeposits();
-        }
-
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const key = document.getElementById('admin-key').value.trim();
-            if (!key) return;
-            setAuth(key);
-            await loadDeposits();
-        });
-
-        logoutBtn.addEventListener('click', clearAuth);
-
-        const initialKey = getStoredKey();
-        if (initialKey) {
-            setAuth(initialKey);
-            loadDeposits();
-        }
-    </script>
+    <!-- Frontend Script -->
+    <script src="app.js"></script>
 </body>
 </html>
