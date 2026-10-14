@@ -4,7 +4,7 @@ import os
 DB_PATH = "bot_database.db"
 
 STAR_PACKAGES = [
-    ('stars', '100 Stars 🌟', 28000.0, 100, 'stars_100.png'),
+    ('stars', '100 Stars 🌟', 25555.0, 100, 'stars_100.png'),
     ('stars', '150 Stars 🌟', 41000.0, 150, 'stars_150.png'),
     ('stars', '250 Stars 🌟', 66000.0, 250, 'stars_250.png'),
     ('stars', '500 Stars 🌟', 130000.0, 500, 'stars_500.png'),
