@@ -2,8 +2,8 @@
 
 STRINGS = {
     "uz": {
-        "welcome": "👋 Xush kelibsiz, {name}!\n\n🤖 Bot orqali endi adminlarsiz o'yinlarga va Telegram xizmatlariga donat qilishingiz mumkin.\n\n⚡️ Qulay interfeys\n💳 Qulay to'lov usullari\n🚀 To'liq tezkor xizmat",
-        "open_webapp": "Xaridga o'tish 🚀",
+        "welcome": "👋 Xush kelibsiz, {name}!\n\n🌟 **STARS DROP** — Telegram Stars va Eksklyuziv Sovg'alar (Gifts) mini-ilovasi!\n\n🎁 **14 Stars** evaziga Keys oching va qimmatbaho Telegram Giftlarni yutib oling!\n🎡 Omad charxi va ruletkalar\n💎 Telegram Stars va Premium rasmiy xaridi\n⚡️ Tezkor va ishonchli xizmat",
+        "open_webapp": "Keyslarni ochish 🚀",
         "news_channel": "⚡ Yangiliklar",
         "support": "🤖 Qo'llab-quvvatlash",
         "admin_welcome": "Siz adminsiz! Quyidagi tugmalar orqali botni boshqarishingiz mumkin:",
